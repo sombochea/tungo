@@ -20,15 +20,15 @@ print_error() {
 }
 
 print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
+    echo -e "${GREEN}✓ $1${NC}" >&2
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ $1${NC}"
+    echo -e "${BLUE}ℹ $1${NC}" >&2
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
+    echo -e "${YELLOW}⚠ $1${NC}" >&2
 }
 
 # Detect OS and Architecture
@@ -53,10 +53,7 @@ detect_platform() {
         x86_64)
             ARCH="amd64"
             ;;
-        aarch64)
-            ARCH="arm64"
-            ;;
-        arm64)
+        aarch64|arm64)
             ARCH="arm64"
             ;;
         *)
