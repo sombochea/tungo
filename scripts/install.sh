@@ -41,7 +41,8 @@ detect_platform() {
             OS="linux"
             ;;
         Darwin)
-            OS="macos"
+            PLATFORM="macos"
+            OS="darwin"
             ;;
         *)
             print_error "Unsupported operating system: $os"
@@ -83,7 +84,8 @@ get_latest_version() {
 # Download binary
 download_binary() {
     local version=$1
-    local download_url="https://github.com/$GITHUB_REPO/releases/download/$version/tungo-${OS}-${ARCH}"
+    local os_name=${PLATFORM:-$OS}
+    local download_url="https://github.com/$GITHUB_REPO/releases/download/$version/tungo-${os_name}-${ARCH}"
     local temp_file=$(mktemp)
     
     print_info "Downloading tungo $version..."
@@ -165,6 +167,9 @@ main() {
     echo -e "${BLUE}║   TunGo Client Installation Script     ║${NC}"
     echo -e "${BLUE}╚════════════════════════════════════════╝${NC}\n"
     
+    # Initialize variables
+    PLATFORM=""
+    
     # Detect platform
     detect_platform
     
@@ -194,7 +199,7 @@ main() {
     
     echo "Installation Details:"
     echo "  Version: $VERSION"
-    echo "  Platform: $OS/$ARCH"
+    echo "  Platform: ${PLATFORM:-$OS}/$ARCH"
     echo "  Location: $INSTALL_PATH"
     echo ""
     
