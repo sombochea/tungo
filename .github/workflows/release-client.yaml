@@ -1,0 +1,99 @@
+name: Release Client CLI
+
+on:
+    push:
+        tags:
+            - "v*"
+
+env:
+    GO_VERSION: "1.25"
+
+jobs:
+    build:
+        name: Build ${{ matrix.os }}/${{ matrix.arch }}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - os: linux
+                      arch: amd64
+                      output: tungo-linux-amd64
+                    - os: linux
+                      arch: arm64
+                      output: tungo-linux-arm64
+                    - os: darwin
+                      arch: amd64
+                      output: tungo-macos-amd64
+                    - os: darwin
+                      arch: arm64
+                      output: tungo-macos-arm64
+                    - os: windows
+                      arch: amd64
+                      output: tungo-windows-amd64.exe
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Set up Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+
+            - name: Build binary
+              env:
+                  GOOS: ${{ matrix.os }}
+                  GOARCH: ${{ matrix.arch }}
+              run: |
+                  CGO_ENABLED=0 go build \
+                    -ldflags="-s -w -X github.com/sombochea/tungo/internal/client.Version=${{ github.ref_name }}" \
+                    -o ${{ matrix.output }} \
+                    cmd/client/main.go
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ matrix.output }}
+                  path: ${{ matrix.output }}
+                  retention-days: 1
+
+    release:
+        name: Create Release
+        needs: build
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Download all artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  path: ./artifacts
+
+            - name: Prepare release files
+              run: |
+                  mkdir -p release
+                  for dir in artifacts/*/; do
+                    cp "$dir"/* release/
+                  done
+                  ls -lah release/
+
+            - name: Generate release notes
+              id: release_notes
+              run: |
+                  echo "## Changes" > release_notes.md
+                  git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --oneline --pretty=format:"- %h: %s" >> release_notes.md || echo "- Initial release" >> release_notes.md
+
+            - name: Create Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  files: release/*
+                  body_path: release_notes.md
+                  draft: false
+                  prerelease: false
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
