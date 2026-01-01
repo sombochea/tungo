@@ -53,7 +53,7 @@ func LoadServerConfig(configPath string) (*ServerConfig, error) {
 	v.SetDefault("idle_timeout", "120s")
 	v.SetDefault("ping_interval", "30s")
 	v.SetDefault("connection_timeout", "10s")
-	v.SetDefault("redis_url", "redis://localhost:6379")
+	v.SetDefault("redis_url", "") // Empty by default - will use in-memory mode
 
 	// Set configuration file
 	if configPath != "" {
@@ -115,9 +115,8 @@ func (c *ServerConfig) Validate() error {
 		return fmt.Errorf("max connections must be positive")
 	}
 
-	if c.RedisURL == "" {
-		return fmt.Errorf("redis URL cannot be empty")
-	}
+	// Redis URL is now optional - if not provided, server will use in-memory mode
+	// No validation needed for empty redis_url
 
 	validLogLevels := map[string]bool{
 		"debug": true, "info": true, "warn": true, "error": true, "fatal": true,

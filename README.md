@@ -11,9 +11,11 @@ Secure, high-performance HTTP tunnel service in Go. Expose your local server to 
 -   🚀 High performance Go architecture with Fiber v3
 -   🎨 Modern TailwindCSS dashboard for request inspection
 -   🔒 TLS support with authentication & rate limiting
--   🔄 Redis clustering for horizontal scaling
--   📊 Prometheus metrics
--   🐳 Docker ready
+- 💾 **Dual datastore modes**: In-memory (zero config) or Redis (distributed)
+- 🔄 Redis clustering for horizontal scaling
+- 📊 Prometheus metrics
+- 🐳 Docker ready
+- ⚡ Zero dependencies to get started - runs standalone!
 
 ## 🎯 Quick Start
 
@@ -31,7 +33,7 @@ make build
 ### Start Server
 
 ```bash
-# Basic
+# Basic (in-memory mode - no Redis needed!)
 ./bin/server
 
 # With config
@@ -40,6 +42,8 @@ make build
 # Docker
 docker-compose up -d
 ```
+
+> **Note**: Server runs in in-memory mode by default. For distributed/clustered setup, configure `redis_url` in your config file.
 
 ### Start Client
 
@@ -117,13 +121,19 @@ allow_anonymous: true
 # Domain settings
 subdomain_suffix: 'localhost'
 
-# Redis (required)
-redis_url: 'redis://localhost:6379'
+# Datastore (optional)
+# Leave empty for in-memory mode (single server)
+# Set Redis URL for distributed mode (clustering)
+redis_url: ''  # Example: "redis://localhost:6379"
 
 # Logging
 log_level: 'info'
 log_format: 'json'
 ```
+
+**Datastore Modes:**
+- **In-Memory** (default): Perfect for development and single-server deployments. Zero setup required!
+- **Redis**: For production clusters with multiple servers. Enables load balancing and high availability.
 
 ### Client (`client.yaml`)
 
@@ -155,11 +165,7 @@ log_format: 'console'
 # Server
 export TUNGO_SERVER_HOST=0.0.0.0
 export TUNGO_SERVER_PORT=8080
-export TUNGO_SERVER_REDIS_URL=redis://localhost:6379
-
-# Client
-export TUNGO_CLIENT_SERVER_HOST=localhost
-export TUNGO_CLIENT_LOCAL_PORT=3000
+export TUNGO_SERVER_REDIS_URL=redis://localhost:6379  # Optional - omit for in-memory mode
 export TUNGO_CLIENT_ENABLE_DASHBOARD=true
 ```
 

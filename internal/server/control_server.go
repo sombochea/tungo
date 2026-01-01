@@ -16,7 +16,7 @@ type ControlServer struct {
 	config       *config.ServerConfig
 	connMgr      *ConnectionManager
 	logger       zerolog.Logger
-	distRegistry *registry.DistributedRegistry
+	distRegistry registry.Registry
 }
 
 // NewControlServer creates a new control server
@@ -24,13 +24,13 @@ func NewControlServer(
 	cfg *config.ServerConfig,
 	connMgr *ConnectionManager,
 	logger zerolog.Logger,
-	distRegistry *registry.DistributedRegistry,
+	reg registry.Registry,
 ) *ControlServer {
 	return &ControlServer{
 		config:       cfg,
 		connMgr:      connMgr,
 		logger:       logger,
-		distRegistry: distRegistry,
+		distRegistry: reg,
 	}
 }
 

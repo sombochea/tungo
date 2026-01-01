@@ -36,17 +36,17 @@ type ConnectionManager struct {
 	clients       map[protocol.ClientID]*ClientConnection
 	subdomains    map[string]protocol.ClientID
 	mutex         sync.RWMutex
-	registry      *registry.DistributedRegistry
+	registry      registry.Registry
 	logger        zerolog.Logger
 	maxConnection int
 }
 
 // NewConnectionManager creates a new connection manager
-func NewConnectionManager(registry *registry.DistributedRegistry, logger zerolog.Logger, maxConn int) *ConnectionManager {
+func NewConnectionManager(reg registry.Registry, logger zerolog.Logger, maxConn int) *ConnectionManager {
 	return &ConnectionManager{
 		clients:       make(map[protocol.ClientID]*ClientConnection),
 		subdomains:    make(map[string]protocol.ClientID),
-		registry:      registry,
+		registry:      reg,
 		logger:        logger,
 		maxConnection: maxConn,
 	}

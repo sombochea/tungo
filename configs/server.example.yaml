@@ -27,6 +27,8 @@ subdomain_suffix: "localhost"
 log_level: "info"      # debug, info, warn, error, fatal
 log_format: "json"     # json or console
 
-# Redis (required for clustering and state management)
-redis_url: "redis://localhost:6379"
+# Datastore (optional)
+# Leave empty for in-memory mode (single server, easy development)
+# Set Redis URL for distributed mode (multi-server clustering)
+redis_url: ""  # Example: "redis://localhost:6379"
 

@@ -46,16 +46,23 @@ func main() {
 		Str("redis_url", cfg.RedisURL).
 		Msg("Server configuration")
 
-	// Initialize distributed registry (Redis as datastore)
+	// Initialize registry (auto-detect: Redis if URL provided, otherwise in-memory)
 	slogger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
 
-	distRegistry, err := registry.NewDistributedRegistry(cfg.RedisURL, cfg.ID, slogger)
+	datastore, err := registry.NewRegistry(cfg.RedisURL, cfg.ID, slogger)
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to initialize distributed registry")
+		log.Fatal().Err(err).Msg("Failed to initialize registry")
 	}
-	defer distRegistry.Close()
+	defer datastore.Close()
+
+	// Log the datastore mode
+	if cfg.RedisURL == "" {
+		log.Info().Msg("Using in-memory datastore (non-distributed mode)")
+	} else {
+		log.Info().Str("redis_url", cfg.RedisURL).Msg("Using Redis datastore (distributed mode)")
+	}
 
 	// Register this server and start heartbeat
 	serverInfo := &registry.ServerInfo{
@@ -64,21 +71,19 @@ func main() {
 		ProxyPort:   cfg.Port,
 		ControlPort: cfg.ControlPort,
 	}
-	if err := distRegistry.RegisterServer(serverInfo); err != nil {
+	if err := datastore.RegisterServer(serverInfo); err != nil {
 		log.Fatal().Err(err).Msg("Failed to register server")
 	}
-	distRegistry.StartHeartbeat(serverInfo)
+	datastore.StartHeartbeat(serverInfo)
 
 	// Initialize server proxy for cross-server communication
-	serverProxy := proxy.NewServerProxy(distRegistry, slogger)
+	serverProxy := proxy.NewServerProxy(datastore, slogger)
 
-	log.Info().Str("redis_url", cfg.RedisURL).Msg("Redis datastore initialized")
-
-	// Create connection manager (Redis-backed, no SQLite)
-	connMgr := server.NewConnectionManager(distRegistry, log.Logger, cfg.MaxConnections)
+	// Create connection manager
+	connMgr := server.NewConnectionManager(datastore, log.Logger, cfg.MaxConnections)
 
 	// Create control server
-	controlServer := server.NewControlServer(cfg, connMgr, log.Logger, distRegistry)
+	controlServer := server.NewControlServer(cfg, connMgr, log.Logger, datastore)
 
 	// Create proxy handler
 	proxyHandler := server.NewProxyHandler(connMgr, log.Logger)
@@ -225,7 +230,7 @@ func main() {
 
 		for range ticker.C {
 			activeConns := connMgr.GetActiveConnectionsCount()
-			if err := distRegistry.UpdateServerLoad(activeConns); err != nil {
+			if err := datastore.UpdateServerLoad(activeConns); err != nil {
 				log.Warn().Err(err).Msg("Failed to update server load")
 			}
 		}

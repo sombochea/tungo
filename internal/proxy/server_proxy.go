@@ -31,15 +31,15 @@ var (
 
 // ServerProxy handles proxying requests to other servers in the cluster
 type ServerProxy struct {
-	registry *registry.DistributedRegistry
+	registry registry.Registry
 	logger   *slog.Logger
 	client   *http.Client
 }
 
 // NewServerProxy creates a new server-to-server proxy with connection pooling
-func NewServerProxy(registry *registry.DistributedRegistry, logger *slog.Logger) *ServerProxy {
+func NewServerProxy(reg registry.Registry, logger *slog.Logger) *ServerProxy {
 	return &ServerProxy{
-		registry: registry,
+		registry: reg,
 		logger:   logger,
 		client: &http.Client{
 			Timeout: 30 * time.Second,
