@@ -21,13 +21,38 @@ Secure, high-performance HTTP tunnel service in Go. Expose your local server to 
 
 ### Installation
 
+#### Option 1: Download Pre-built Binaries (Recommended)
+
+**Linux & macOS:**
 ```bash
-# Build from source
+curl -sSL https://raw.githubusercontent.com/sombochea/tungo/main/scripts/install.sh | bash
+```
+
+**Windows:**
+```powershell
+powershell -ExecutionPolicy Bypass -Command "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/sombochea/tungo/main/scripts/install.ps1' -OutFile install.ps1; .\install.ps1"
+```
+
+**Supported Platforms:**
+- ✅ macOS (Intel & Apple Silicon)
+- ✅ Linux (x86_64, ARM64)
+- ✅ Windows (x86_64, ARM64)
+
+For detailed installation guide, see [scripts/INSTALL.md](scripts/INSTALL.md).
+
+#### Option 2: Build from Source
+
+```bash
+# Clone the repository
 git clone https://github.com/sombochea/tungo
 cd tungo
+
+# Build binaries
 make build
 
 # Binaries will be in bin/
+./bin/server
+./bin/client
 ```
 
 ### Start Server
