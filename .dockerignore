@@ -1,0 +1,28 @@
+# Add .env file for environment variables
+.env
+
+# Ignore data directories
+data/
+logs/
+
+# Ignore build artifacts
+target/
+../target/
+
+# Ignore compiled binaries
+tungo-server
+tungo-client
+server-test
+client-test
+main
+
+# Ignore Docker volumes
+docker-volumes/
+
+# Ignore backup files
+*.tar.gz
+*.backup
+
+# Ignore temporary files
+*.tmp
+*.log

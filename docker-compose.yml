@@ -1,0 +1,100 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tungo-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    restart: unless-stopped
+    networks:
+      - tungo-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Server 1
+  tungo-server-1:
+    image: tungo-server:latest
+    container_name: tungo-server-1
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "5555:5555" # WebSocket control port
+      - "8080:8080" # HTTP proxy port
+      - "9090:9090" # Prometheus metrics
+    environment:
+      - TUNGO_SERVER_ID=server-1
+      - TUNGO_SERVER_HOST=0.0.0.0
+      - TUNGO_SERVER_PORT=8080
+      - TUNGO_SERVER_CONTROL_PORT=5555
+      - TUNGO_SERVER_MAX_CONNECTIONS=1000
+      - TUNGO_SERVER_REQUIRE_AUTH=false
+      - TUNGO_SERVER_ALLOW_ANONYMOUS=true
+      - TUNGO_SERVER_SUBDOMAIN_SUFFIX=localhost
+      - TUNGO_SERVER_LOG_LEVEL=info
+      - TUNGO_SERVER_LOG_FORMAT=json
+      - TUNGO_SERVER_REDIS_URL=redis://redis:6379
+    restart: unless-stopped
+    networks:
+      - tungo-network
+
+  # Server 2
+  tungo-server-2:
+    image: tungo-server:latest
+    container_name: tungo-server-2
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "5556:5555" # WebSocket control port (mapped to 5556 on host)
+      - "8081:8080" # HTTP proxy port (mapped to 8081 on host)
+      - "9091:9090" # Prometheus metrics (mapped to 9091 on host)
+    environment:
+      - TUNGO_SERVER_ID=server-2
+      - TUNGO_SERVER_HOST=0.0.0.0
+      - TUNGO_SERVER_PORT=8080
+      - TUNGO_SERVER_CONTROL_PORT=5555
+      - TUNGO_SERVER_MAX_CONNECTIONS=1000
+      - TUNGO_SERVER_REQUIRE_AUTH=false
+      - TUNGO_SERVER_ALLOW_ANONYMOUS=true
+      - TUNGO_SERVER_SUBDOMAIN_SUFFIX=localhost
+      - TUNGO_SERVER_LOG_LEVEL=info
+      - TUNGO_SERVER_LOG_FORMAT=json
+      - TUNGO_SERVER_REDIS_URL=redis://redis:6379
+    restart: unless-stopped
+    networks:
+      - tungo-network
+
+  # Server 3
+  tungo-server-3:
+    image: tungo-server:latest
+    container_name: tungo-server-3
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "5557:5555" # WebSocket control port (mapped to 5557 on host)
+      - "8082:8080" # HTTP proxy port (mapped to 8082 on host)
+      - "9092:9090" # Prometheus metrics (mapped to 9092 on host)
+    environment:
+      - TUNGO_SERVER_ID=server-3
+      - TUNGO_SERVER_HOST=0.0.0.0
+      - TUNGO_SERVER_PORT=8080
+      - TUNGO_SERVER_CONTROL_PORT=5555
+      - TUNGO_SERVER_MAX_CONNECTIONS=1000
+      - TUNGO_SERVER_REQUIRE_AUTH=false
+      - TUNGO_SERVER_ALLOW_ANONYMOUS=true
+      - TUNGO_SERVER_SUBDOMAIN_SUFFIX=localhost
+      - TUNGO_SERVER_LOG_LEVEL=info
+      - TUNGO_SERVER_LOG_FORMAT=json
+      - TUNGO_SERVER_REDIS_URL=redis://redis:6379
+    restart: unless-stopped
+    networks:
+      - tungo-network
+
+networks:
+  tungo-network:
+    driver: bridge

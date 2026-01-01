@@ -1,0 +1,188 @@
+{{define "index.html"}}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="origin">
+    <link rel="icon" href="/static/img/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    <title>TunGo Inspector</title>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen text-slate-100">
+    <!-- Header -->
+    <header class="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <img src="/static/img/logo.png" alt="Logo" class="h-10 w-10 rounded-lg shadow-lg">
+                    <div>
+                        <a href="/" class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hover:from-blue-300 hover:to-purple-300 transition-all">
+                            TunGo Inspector
+                        </a>
+                        <p class="text-xs text-slate-400 mt-0.5">Real-time HTTP traffic monitoring</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                        Live
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-slate-400 text-sm font-medium">Total Requests</p>
+                <p class="text-3xl font-bold text-white mt-1">{{len .Requests}}</p>
+            </div>
+            <div class="bg-blue-500/10 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-semibold text-white">Request History</h2>
+    <button onclick="location.reload()" class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg shadow-lg shadow-blue-500/20 transition-all duration-200 hover:shadow-blue-500/40">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Refresh
+    </button>
+</div>
+
+{{if eq (len .Requests) 0}}
+<!-- Empty State -->
+<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-12 text-center">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-700/50 rounded-full mb-4">
+        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        </svg>
+    </div>
+    <h3 class="text-lg font-semibold text-white mb-2">No requests yet</h3>
+    <p class="text-slate-400">Start making requests to your tunnel to see them here</p>
+</div>
+{{else}}
+<!-- Requests Table -->
+<div class="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-slate-900/50 border-b border-slate-700/50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Time</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Duration</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Method</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Path</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Size IN</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Size OUT</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50">
+            {{range .Requests}}
+                <tr class="hover:bg-slate-700/30 cursor-pointer transition-colors" onclick="window.location='/detail/{{.ID}}'">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">
+                        {{.Completed.Format "15:04:05"}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-mono">
+                        {{.Elapsed}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{if and (ge .Status 200) (lt .Status 300)}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                            {{.Status}}
+                        </span>
+                        {{else if and (ge .Status 300) (lt .Status 400)}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            {{.Status}}
+                        </span>
+                        {{else if and (ge .Status 400) (lt .Status 500)}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                            {{.Status}}
+                        </span>
+                        {{else if ge .Status 500}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                            {{.Status}}
+                        </span>
+                        {{else}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                            {{.Status}}
+                        </span>
+                        {{end}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {{if eq .Method "GET"}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-blue-500/10 text-blue-400">{{.Method}}</span>
+                        {{else if eq .Method "POST"}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-green-500/10 text-green-400">{{.Method}}</span>
+                        {{else if eq .Method "PUT"}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-yellow-500/10 text-yellow-400">{{.Method}}</span>
+                        {{else if eq .Method "DELETE"}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-red-500/10 text-red-400">{{.Method}}</span>
+                        {{else if eq .Method "PATCH"}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-purple-500/10 text-purple-400">{{.Method}}</span>
+                        {{else}}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-500/10 text-slate-400">{{.Method}}</span>
+                        {{end}}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-300 font-mono max-w-md truncate">
+                        {{.Path}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                        {{div (len .BodyData) 1024}} KB
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                        {{div (len .ResponseData) 1024}} KB
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="/detail/{{.ID}}" class="text-blue-400 hover:text-blue-300 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </a>
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-700/50 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <p class="text-center text-slate-400 text-sm">
+                Built with <span class="text-red-400">♥</span> using TailwindCSS
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
+{{end}}

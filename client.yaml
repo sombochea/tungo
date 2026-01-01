@@ -1,0 +1,35 @@
+# TunGo Client Configuration
+
+# Server connection (single server)
+server_host: "localhost"
+control_port: 5555
+
+# OR use server cluster for failover (commented out by default)
+# server_cluster:
+#   - host: "server1.example.com"
+#     port: 5555
+#   - host: "server2.example.com"
+#     port: 5555
+
+# Local server to tunnel
+local_host: "localhost"
+local_port: 3000
+
+# Tunnel settings
+subdomain: ""          # Leave empty for random subdomain
+secret_key: ""         # Optional: for authenticated tunnels
+reconnect_token: ""    # Auto-generated on first connection
+
+# Connection behavior
+connect_timeout: "10s"
+retry_interval: "5s"
+max_retries: 3
+
+# Dashboard settings
+enable_dashboard: false
+dashboard_port: 3000
+
+# Logging
+log_level: "info"      # debug, info, warn, error, fatal
+log_format: "console"  # json or console
+
