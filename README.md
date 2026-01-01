@@ -2,7 +2,7 @@
 
 Secure, high-performance HTTP tunnel service in Go. Expose your local server to the internet via a public URL.
 
-[![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](https://hub.docker.com)
 
@@ -75,12 +75,9 @@ Open `http://localhost:3001` to view:
 
 ```yaml
 # docker-compose.yml
-version: '3.8'
 services:
     redis:
         image: redis:7-alpine
-        ports:
-            - '6379:6379'
 
     server:
         build: .

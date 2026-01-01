@@ -3,8 +3,8 @@
 .PHONY: all build test clean run-server run-client docker-build docker-run help
 
 # Variables
-BINARY_SERVER=bin/tungo-server
-BINARY_CLIENT=bin/tungo-client
+BINARY_SERVER=bin/server
+BINARY_CLIENT=bin/client
 VERSION?=$(shell git describe --tags --always --dirty)
 LDFLAGS=-ldflags "-w -s -X main.Version=$(VERSION)"
 

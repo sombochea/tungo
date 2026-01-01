@@ -75,11 +75,11 @@ build_project() {
         make build
     else
         mkdir -p bin
-        go build -o bin/tungo-server ./cmd/server
-        go build -o bin/tungo-client ./cmd/client
+        go build -o bin/server ./cmd/server
+        go build -o bin/client ./cmd/client
     fi
     
-    if [ -f "bin/tungo-server" ] && [ -f "bin/tungo-client" ]; then
+    if [ -f "bin/server" ] && [ -f "bin/client" ]; then
         print_success "Build completed successfully"
     else
         print_error "Build failed"
@@ -137,7 +137,7 @@ start_server() {
     pkill -f "tungo-server" 2>/dev/null || true
     
     # Start server in background
-    ./bin/tungo-server > logs/server.log 2>&1 &
+    ./bin/server > logs/server.log 2>&1 &
     SERVER_PID=$!
     
     # Wait for server to start
@@ -185,7 +185,7 @@ show_next_steps() {
     echo "   ${YELLOW}python3 -m http.server 8000${NC}"
     echo ""
     echo "2. In another terminal, start the client:"
-    echo "   ${YELLOW}./bin/tungo-client --port 8000 --verbose${NC}"
+    echo "   ${YELLOW}./bin/client --port 8000 --verbose${NC}"
     echo ""
     echo "3. Test your tunnel:"
     echo "   ${YELLOW}curl -H \"Host: <subdomain>.localhost\" http://localhost:8080/${NC}"
