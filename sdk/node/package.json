@@ -1,0 +1,45 @@
+{
+  "name": "@tungo/sdk",
+  "version": "1.0.0",
+  "description": "TunGo SDK for Node.js - Expose local servers to the internet",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "tunnel",
+    "ngrok",
+    "localhost",
+    "expose",
+    "webhook",
+    "tunneling",
+    "tungo"
+  ],
+  "author": "TunGo",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sombochea/tungo"
+  }
+}

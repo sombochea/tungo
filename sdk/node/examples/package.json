@@ -1,0 +1,23 @@
+{
+  "name": "@tungo/sdk-examples",
+  "version": "1.0.0",
+  "description": "TunGo SDK Examples",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "express": "tsx src/express.ts",
+    "webhook": "tsx src/webhook.ts",
+    "advanced": "tsx src/advanced.ts"
+  },
+  "dependencies": {
+    "@tungo/sdk": "file:..",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
