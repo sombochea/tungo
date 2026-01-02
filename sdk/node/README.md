@@ -10,7 +10,7 @@ Native Node.js/TypeScript SDK to expose your local server to the internet using 
 🔄 **Auto-Reconnect** - Automatic reconnection with configurable retry logic  
 🎯 **TypeScript First** - Full type safety and IntelliSense support  
 🌐 **Deno Compatible** - Works seamlessly with Deno via npm: specifier  
-⚡ **Event-Driven** - Rich event system for monitoring tunnel status  
+⚡ **Event-Driven** - Rich event system for monitoring tunnel status
 
 ## Installation
 
@@ -37,9 +37,10 @@ go run cmd/server/main.go
 ```
 
 **Default server configuration:**
-- Host: `localhost`
-- Control Port: `5555`
-- WebSocket URL: `ws://localhost:5555/ws`
+
+-   Host: `localhost`
+-   Control Port: `5555`
+-   WebSocket URL: `ws://localhost:5555/ws`
 
 ## Quick Start
 
@@ -48,7 +49,7 @@ import { TunGoClient } from '@tungo/sdk';
 
 // Create client
 const client = new TunGoClient({
-  localPort: 3000,  // Your local server port
+    localPort: 3000, // Your local server port
 });
 
 // Start tunnel
@@ -60,8 +61,8 @@ console.log('Tunnel URL:', tunnel.url);
 
 // Stop when done
 process.on('SIGINT', () => {
-  client.stop();
-  process.exit();
+    client.stop();
+    process.exit();
 });
 ```
 
@@ -88,16 +89,16 @@ new TunGoClient(options: TunGoOptions, events?: TunGoEvents)
 
 ```typescript
 interface TunGoOptions {
-  localPort: number;           // Required: Local server port to tunnel
-  serverHost?: string;         // Default: 'localhost' - TunGo server host
-  controlPort?: number;        // Default: 5555 - TunGo server WebSocket port
-  localHost?: string;          // Default: 'localhost' - Local server host
-  subdomain?: string;          // Optional: Custom subdomain (random if not set)
-  secretKey?: string;          // Optional: Authentication key
-  connectTimeout?: number;     // Default: 10000ms - Connection timeout
-  maxRetries?: number;         // Default: 5 - Max reconnection attempts
-  retryInterval?: number;      // Default: 5000ms - Time between retries
-  logLevel?: 'debug' | 'info' | 'warn' | 'error';  // Default: 'info'
+    localPort: number; // Required: Local server port to tunnel
+    serverHost?: string; // Default: 'localhost' - TunGo server host
+    controlPort?: number; // Default: 5555 - TunGo server WebSocket port
+    localHost?: string; // Default: 'localhost' - Local server host
+    subdomain?: string; // Optional: Custom subdomain (random if not set)
+    secretKey?: string; // Optional: Authentication key
+    connectTimeout?: number; // Default: 10000ms - Connection timeout
+    maxRetries?: number; // Default: 5 - Max reconnection attempts
+    retryInterval?: number; // Default: 5000ms - Time between retries
+    logLevel?: 'debug' | 'info' | 'warn' | 'error'; // Default: 'info'
 }
 ```
 
@@ -105,20 +106,20 @@ interface TunGoOptions {
 
 ```typescript
 interface TunGoEvents {
-  onConnect?: (info: TunnelInfo) => void;
-  onDisconnect?: (reason?: string) => void;
-  onError?: (error: Error) => void;
-  onReconnect?: (attempt: number) => void;
-  onStatus?: (status: string) => void;
+    onConnect?: (info: TunnelInfo) => void;
+    onDisconnect?: (reason?: string) => void;
+    onError?: (error: Error) => void;
+    onReconnect?: (attempt: number) => void;
+    onStatus?: (status: string) => void;
 }
 ```
 
 #### Methods
 
-- `start(): Promise<TunnelInfo>` - Start the tunnel
-- `stop(): void` - Stop the tunnel
-- `getInfo(): TunnelInfo | null` - Get current tunnel info
-- `isActive(): boolean` - Check if tunnel is active
+-   `start(): Promise<TunnelInfo>` - Start the tunnel
+-   `stop(): void` - Stop the tunnel
+-   `getInfo(): TunnelInfo | null` - Get current tunnel info
+-   `isActive(): boolean` - Check if tunnel is active
 
 ## Usage Examples
 
@@ -132,17 +133,17 @@ const app = express();
 const PORT = 3000;
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Hello from TunGo!' });
+    res.json({ message: 'Hello from TunGo!' });
 });
 
 const server = app.listen(PORT, async () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 
-  // Start tunnel
-  const client = new TunGoClient({ localPort: PORT });
-  const tunnel = await client.start();
-  
-  console.log(`🌍 Public URL: ${tunnel.url}`);
+    // Start tunnel
+    const client = new TunGoClient({ localPort: PORT });
+    const tunnel = await client.start();
+
+    console.log(`🌍 Public URL: ${tunnel.url}`);
 });
 ```
 
@@ -152,27 +153,27 @@ const server = app.listen(PORT, async () => {
 import { TunGoClient } from '@tungo/sdk';
 
 const client = new TunGoClient(
-  {
-    localPort: 3000,
-    subdomain: 'my-app',
-  },
-  {
-    onConnect: (info) => {
-      console.log('✅ Connected:', info.url);
+    {
+        localPort: 3000,
+        subdomain: 'my-app',
     },
-    onDisconnect: (reason) => {
-      console.log('❌ Disconnected:', reason);
-    },
-    onError: (error) => {
-      console.error('❌ Error:', error.message);
-    },
-    onReconnect: (attempt) => {
-      console.log(`🔄 Reconnecting... (attempt ${attempt})`);
-    },
-    onStatus: (status) => {
-      console.log(`📊 Status: ${status}`);
-    },
-  }
+    {
+        onConnect: (info) => {
+            console.log('✅ Connected:', info.url);
+        },
+        onDisconnect: (reason) => {
+            console.log('❌ Disconnected:', reason);
+        },
+        onError: (error) => {
+            console.error('❌ Error:', error.message);
+        },
+        onReconnect: (attempt) => {
+            console.log(`🔄 Reconnecting... (attempt ${attempt})`);
+        },
+        onStatus: (status) => {
+            console.log(`📊 Status: ${status}`);
+        },
+    }
 );
 
 await client.start();
@@ -185,13 +186,13 @@ import { TunGoClient } from '@tungo/sdk';
 
 // Option 1: Using serverUrl (recommended for production)
 const client = new TunGoClient({
-  serverUrl: 'wss://tunnel.mycompany.com/ws',  // Secure WebSocket
-  localPort: 8080,
-  subdomain: 'my-api',
-  secretKey: 'my-secret-key',
-  maxRetries: 10,
-  retryInterval: 3000,
-  logLevel: 'debug',
+    serverUrl: 'wss://tunnel.mycompany.com/ws', // Secure WebSocket
+    localPort: 8080,
+    subdomain: 'my-api',
+    secretKey: 'my-secret-key',
+    maxRetries: 10,
+    retryInterval: 3000,
+    logLevel: 'debug',
 });
 
 // Option 2: Using serverHost and controlPort (legacy)
@@ -216,19 +217,19 @@ const app = express();
 app.use(express.json());
 
 app.post('/webhook', (req, res) => {
-  console.log('Webhook received:', req.body);
-  res.json({ received: true });
+    console.log('Webhook received:', req.body);
+    res.json({ received: true });
 });
 
 const server = app.listen(4000, async () => {
-  const client = new TunGoClient({
-    localPort: 4000,
-    subdomain: 'my-webhooks',
-  });
+    const client = new TunGoClient({
+        localPort: 4000,
+        subdomain: 'my-webhooks',
+    });
 
-  const tunnel = await client.start();
-  console.log(`Webhook URL: ${tunnel.url}/webhook`);
-  console.log('Configure this URL in your webhook provider!');
+    const tunnel = await client.start();
+    console.log(`Webhook URL: ${tunnel.url}/webhook`);
+    console.log('Configure this URL in your webhook provider!');
 });
 ```
 
@@ -244,14 +245,14 @@ const next = spawn('npm', ['run', 'dev'], { stdio: 'inherit' });
 
 // Wait a bit for Next.js to start
 setTimeout(async () => {
-  const client = new TunGoClient({ localPort: 3000 });
-  const tunnel = await client.start();
-  console.log(`\n🌍 Share your app: ${tunnel.url}\n`);
+    const client = new TunGoClient({ localPort: 3000 });
+    const tunnel = await client.start();
+    console.log(`\n🌍 Share your app: ${tunnel.url}\n`);
 }, 3000);
 
 process.on('SIGINT', () => {
-  next.kill();
-  process.exit();
+    next.kill();
+    process.exit();
 });
 ```
 
@@ -262,7 +263,7 @@ process.on('SIGINT', () => {
 import { TunGoClient } from 'npm:@tungo/sdk';
 
 const client = new TunGoClient({
-  localPort: 8000,
+    localPort: 8000,
 });
 
 const tunnel = await client.start();
@@ -277,8 +278,8 @@ Full TypeScript support with type definitions included:
 import { TunGoClient, TunGoOptions, TunnelInfo } from '@tungo/sdk';
 
 const options: TunGoOptions = {
-  localPort: 3000,
-  subdomain: 'my-app',
+    localPort: 3000,
+    subdomain: 'my-app',
 };
 
 const client = new TunGoClient(options);
@@ -291,61 +292,64 @@ const info: TunnelInfo = await client.start();
 import { TunGoClient } from '@tungo/sdk';
 
 const client = new TunGoClient(
-  { localPort: 3000 },
-  {
-    onError: (error) => {
-      if (error.message.includes('ECONNREFUSED')) {
-        console.error('Cannot connect to TunGo server');
-      } else if (error.message.includes('timeout')) {
-        console.error('Connection timeout');
-      } else {
-        console.error('Tunnel error:', error.message);
-      }
-    },
-  }
+    { localPort: 3000 },
+    {
+        onError: (error) => {
+            if (error.message.includes('ECONNREFUSED')) {
+                console.error('Cannot connect to TunGo server');
+            } else if (error.message.includes('timeout')) {
+                console.error('Connection timeout');
+            } else {
+                console.error('Tunnel error:', error.message);
+            }
+        },
+    }
 );
 
 try {
-  await client.start();
+    await client.start();
 } catch (error) {
-  console.error('Failed to start tunnel:', error);
-  process.exit(1);
+    console.error('Failed to start tunnel:', error);
+    process.exit(1);
 }
 ```
 
 ## Best Practices
 
 1. **Graceful Shutdown**: Always stop the tunnel on process exit
-   ```typescript
-   process.on('SIGINT', () => {
-     client.stop();
-     process.exit();
-   });
-   ```
+
+    ```typescript
+    process.on('SIGINT', () => {
+        client.stop();
+        process.exit();
+    });
+    ```
 
 2. **Error Handling**: Handle connection errors appropriately
-   ```typescript
-   client.on('error', (error) => {
-     // Log and handle errors
-   });
-   ```
+
+    ```typescript
+    client.on('error', (error) => {
+        // Log and handle errors
+    });
+    ```
 
 3. **Custom Subdomains**: Use custom subdomains for consistency
-   ```typescript
-   const client = new TunGoClient({
-     localPort: 3000,
-     subdomain: 'my-stable-subdomain',
-   });
-   ```
+
+    ```typescript
+    const client = new TunGoClient({
+        localPort: 3000,
+        subdomain: 'my-stable-subdomain',
+    });
+    ```
 
 4. **Environment Variables**: Configure via env vars
-   ```typescript
-   const client = new TunGoClient({
-     localPort: parseInt(process.env.PORT || '3000'),
-     serverHost: process.env.TUNGO_HOST,
-     subdomain: process.env.TUNGO_SUBDOMAIN,
-   });
-   ```
+    ```typescript
+    const client = new TunGoClient({
+        localPort: parseInt(process.env.PORT || '3000'),
+        serverHost: process.env.TUNGO_HOST,
+        subdomain: process.env.TUNGO_SUBDOMAIN,
+    });
+    ```
 
 ## Architecture
 
@@ -369,10 +373,11 @@ The SDK uses native Node.js APIs for optimal performance:
 ```
 
 **Components:**
-- **WebSocket Client** - Maintains persistent connection to TunGo server
-- **HTTP Proxy** - Forwards requests from tunnel to local server
-- **Stream Manager** - Handles multiple concurrent HTTP streams
-- **Reconnection Logic** - Auto-reconnect with exponential backoff
+
+-   **WebSocket Client** - Maintains persistent connection to TunGo server
+-   **HTTP Proxy** - Forwards requests from tunnel to local server
+-   **Stream Manager** - Handles multiple concurrent HTTP streams
+-   **Reconnection Logic** - Auto-reconnect with exponential backoff
 
 ## Troubleshooting
 
@@ -381,6 +386,7 @@ The SDK uses native Node.js APIs for optimal performance:
 **Problem:** Cannot connect to TunGo server
 
 **Solution:**
+
 ```bash
 # 1. Check if TunGo server is running
 lsof -i :5555
@@ -402,6 +408,7 @@ const client = new TunGoClient({
 **Problem:** Local server not running
 
 **Solution:**
+
 ```bash
 # Ensure your local server is running on the specified port
 # Example:
@@ -413,17 +420,18 @@ node server.js  # or npm start, etc.
 **Problem:** Another client is using the same subdomain
 
 **Solution:**
+
 ```typescript
 // Don't specify subdomain to get a random one
 const client = new TunGoClient({
-  localPort: 3000,
-  // subdomain: 'my-app',  // Remove this line
+    localPort: 3000,
+    // subdomain: 'my-app',  // Remove this line
 });
 
 // Or use a unique subdomain
 const client = new TunGoClient({
-  localPort: 3000,
-  subdomain: `my-app-${Date.now()}`,
+    localPort: 3000,
+    subdomain: `my-app-${Date.now()}`,
 });
 ```
 
@@ -435,21 +443,21 @@ const client = new TunGoClient({
 import { TunGoClient } from '@tungo/sdk';
 
 class MyApp {
-  private tunnel: TunGoClient;
+    private tunnel: TunGoClient;
 
-  async start() {
-    this.tunnel = new TunGoClient({ localPort: 3000 });
-    const info = await this.tunnel.start();
-    console.log('Tunnel ready:', info.url);
-  }
+    async start() {
+        this.tunnel = new TunGoClient({ localPort: 3000 });
+        const info = await this.tunnel.start();
+        console.log('Tunnel ready:', info.url);
+    }
 
-  async stop() {
-    this.tunnel?.stop();
-  }
+    async stop() {
+        this.tunnel?.stop();
+    }
 
-  isRunning(): boolean {
-    return this.tunnel?.isActive() ?? false;
-  }
+    isRunning(): boolean {
+        return this.tunnel?.isActive() ?? false;
+    }
 }
 ```
 
@@ -462,10 +470,7 @@ import { TunGoClient } from '@tungo/sdk';
 const api = new TunGoClient({ localPort: 3000, subdomain: 'api' });
 const web = new TunGoClient({ localPort: 8080, subdomain: 'web' });
 
-const [apiTunnel, webTunnel] = await Promise.all([
-  api.start(),
-  web.start(),
-]);
+const [apiTunnel, webTunnel] = await Promise.all([api.start(), web.start()]);
 
 console.log('API:', apiTunnel.url);
 console.log('Web:', webTunnel.url);
@@ -480,28 +485,28 @@ const client = new TunGoClient({ localPort: 3000 });
 
 // Monitor all events
 client.on('connect', (info) => {
-  console.log('✅ Tunnel established:', info.url);
-  // Send notification, update UI, etc.
+    console.log('✅ Tunnel established:', info.url);
+    // Send notification, update UI, etc.
 });
 
 client.on('disconnect', (reason) => {
-  console.log('⚠️  Disconnected:', reason);
-  // Log to monitoring service
+    console.log('⚠️  Disconnected:', reason);
+    // Log to monitoring service
 });
 
 client.on('error', (error) => {
-  console.error('❌ Error:', error.message);
-  // Alert administrators
+    console.error('❌ Error:', error.message);
+    // Alert administrators
 });
 
 client.on('reconnect', (attempt) => {
-  console.log(`🔄 Reconnecting (attempt ${attempt})...`);
-  // Show loading indicator
+    console.log(`🔄 Reconnecting (attempt ${attempt})...`);
+    // Show loading indicator
 });
 
 client.on('status', (status) => {
-  console.log('📊 Status:', status);
-  // Update status dashboard
+    console.log('📊 Status:', status);
+    // Update status dashboard
 });
 
 await client.start();
@@ -517,24 +522,24 @@ await client.start();
 
 ## Comparison with CLI
 
-| Feature | Native SDK | CLI Binary |
-|---------|-----------|------------|
-| Installation | `npm install` | Binary + PATH setup |
-| Startup Time | ~50ms | ~200ms |
-| Memory Usage | ~20MB | ~30MB |
-| Dependencies | Only `ws` | None |
-| Integration | Programmatic | Process spawn |
-| Type Safety | Full TypeScript | None |
-| Events | Rich event system | Parse stdout |
-| Control | Full API access | Limited |
+| Feature      | Native SDK        | CLI Binary          |
+| ------------ | ----------------- | ------------------- |
+| Installation | `npm install`     | Binary + PATH setup |
+| Startup Time | ~50ms             | ~200ms              |
+| Memory Usage | ~20MB             | ~30MB               |
+| Dependencies | Only `ws`         | None                |
+| Integration  | Programmatic      | Process spawn       |
+| Type Safety  | Full TypeScript   | None                |
+| Events       | Rich event system | Parse stdout        |
+| Control      | Full API access   | Limited             |
 
 ## Examples
 
 See the [examples](./examples) directory for complete working examples:
 
-- [express.ts](./examples/src/express.ts) - Basic Express.js server
-- [webhook.ts](./examples/src/webhook.ts) - Webhook receiver with UI
-- [advanced.ts](./examples/src/advanced.ts) - Full-featured example with all options
+-   [express.ts](./examples/src/express.ts) - Basic Express.js server
+-   [webhook.ts](./examples/src/webhook.ts) - Webhook receiver with UI
+-   [advanced.ts](./examples/src/advanced.ts) - Full-featured example with all options
 
 ```bash
 cd examples
@@ -554,5 +559,5 @@ Contributions welcome! Please open an issue or PR.
 
 ## Support
 
-- [GitHub Issues](https://github.com/sombochea/tungo/issues)
-- [Documentation](https://github.com/sombochea/tungo)
+-   [GitHub Issues](https://github.com/sombochea/tungo/issues)
+-   [Documentation](https://github.com/sombochea/tungo)

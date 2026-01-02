@@ -10,7 +10,7 @@ Native Python SDK to expose your local server to the internet using TunGo. Pure 
 🔄 **Auto-Reconnect** - Automatic reconnection with configurable retry logic  
 🎯 **Type Hints** - Full type annotations for better IDE support  
 ⚡ **Event-Driven** - Rich event system for monitoring tunnel status  
-🐍 **Python 3.8+** - Compatible with Python 3.8 and above  
+🐍 **Python 3.8+** - Compatible with Python 3.8 and above
 
 ## Installation
 
@@ -53,9 +53,10 @@ You need a running TunGo server. The SDK connects to the server via WebSocket.
 ```
 
 **Default server configuration:**
-- Host: `localhost`
-- Control Port: `5555`
-- WebSocket URL: `ws://localhost:5555/ws`
+
+-   Host: `localhost`
+-   Control Port: `5555`
+-   WebSocket URL: `ws://localhost:5555/ws`
 
 ## Quick Start
 
@@ -72,7 +73,7 @@ async def main():
     client = TunGoClient(options)
     tunnel = await client.start()
     print(f"Tunnel: {tunnel.url}")
-    
+
     try:
         await asyncio.Event().wait()
     except KeyboardInterrupt:
@@ -95,12 +96,12 @@ async def main():
     # Create client
     options = TunGoOptions(local_port=8000)
     client = TunGoClient(options)
-    
+
     # Start tunnel
     tunnel = await client.start()
     print(f"Tunnel URL: {tunnel.url}")
     # Output: http://abc123.localhost
-    
+
     # Keep running
     try:
         await asyncio.Event().wait()
@@ -149,13 +150,13 @@ from tungo import TunGoOptions
 
 options = TunGoOptions(
     local_port=8000,          # Required: Local server port to tunnel
-    
+
     # Server connection (use ONE of the following):
     server_url="ws://localhost:5555/ws",  # Full WebSocket URL (supports ws:// or wss://)
     # OR
     server_host="localhost",  # TunGo server host (default: localhost)
     control_port=5555,        # TunGo server port (default: 5555)
-    
+
     local_host="localhost",   # Local server host (default: localhost)
     subdomain=None,           # Custom subdomain (optional, random if not set)
     secret_key=None,          # Authentication key (optional)
@@ -167,9 +168,10 @@ options = TunGoOptions(
 ```
 
 **Note:** If `server_url` is provided, `server_host` and `control_port` are ignored. The `server_url` can be:
-- Full URL: `ws://tunnel.example.com:5555/ws` or `wss://tunnel.example.com/ws`
-- Host and port: `tunnel.example.com:5555` (automatically adds `ws://` and `/ws`)
-- Just host: `tunnel.example.com` (uses default port 5555)
+
+-   Full URL: `ws://tunnel.example.com:5555/ws` or `wss://tunnel.example.com/ws`
+-   Host and port: `tunnel.example.com:5555` (automatically adds `ws://` and `/ws`)
+-   Just host: `tunnel.example.com` (uses default port 5555)
 
 #### Events
 
@@ -204,10 +206,10 @@ client = TunGoClient(options, events)
 
 #### Methods
 
-- `async start() -> TunnelInfo` - Start the tunnel
-- `async stop() -> None` - Stop the tunnel
-- `get_info() -> Optional[TunnelInfo]` - Get current tunnel info
-- `is_active() -> bool` - Check if tunnel is active
+-   `async start() -> TunnelInfo` - Start the tunnel
+-   `async stop() -> None` - Stop the tunnel
+-   `get_info() -> Optional[TunnelInfo]` - Get current tunnel info
+-   `is_active() -> bool` - Check if tunnel is active
 
 ## Usage Examples
 
@@ -236,12 +238,12 @@ async def start_tunnel():
     """Start tunnel in background."""
     def on_connect(info):
         print(f"\n🌍 Public URL: {info.url}\n")
-    
+
     events = TunGoEvents(on_connect=on_connect)
     options = TunGoOptions(local_port=8000)
     client = TunGoClient(options, events)
     await client.start()
-    
+
     # Keep tunnel running
     try:
         await asyncio.Event().wait()
@@ -302,17 +304,17 @@ def start_tunnel():
         client = TunGoClient(options)
         tunnel = await client.start()
         print(f"\n🌍 Public URL: {tunnel.url}\n")
-        
+
         # Keep running
         await asyncio.Event().wait()
-    
+
     asyncio.run(_start())
 
 if __name__ == "__main__":
     # Start tunnel in background
     tunnel_thread = Thread(target=start_tunnel, daemon=True)
     tunnel_thread.start()
-    
+
     # Start Flask
     app.run(host="0.0.0.0", port=5000)
 ```
@@ -328,13 +330,13 @@ class TunnelManager:
     def __init__(self, port: int = 8000):
         self.port = port
         self.client = None
-        
+
     async def start(self):
         options = TunGoOptions(local_port=self.port)
         self.client = TunGoClient(options)
         tunnel = await self.client.start()
         print(f"\n🌍 Public URL: {tunnel.url}\n")
-        
+
     async def stop(self):
         if self.client:
             await self.client.stop()
@@ -346,7 +348,7 @@ from threading import Thread
 
 class MyAppConfig(AppConfig):
     name = 'myapp'
-    
+
     def ready(self):
         if os.environ.get('RUN_MAIN') == 'true':
             tunnel = TunnelManager(8000)
@@ -363,28 +365,28 @@ from tungo import TunGoClient, TunGoOptions, TunGoEvents
 async def main():
     def on_connect(info):
         print(f"✅ Connected: {info.url}")
-    
+
     def on_disconnect(reason):
         print(f"❌ Disconnected: {reason}")
-    
+
     def on_error(error):
         print(f"❌ Error: {error}")
-    
+
     def on_reconnect(attempt):
         print(f"🔄 Reconnecting (attempt {attempt})...")
-    
+
     events = TunGoEvents(
         on_connect=on_connect,
         on_disconnect=on_disconnect,
         on_error=on_error,
         on_reconnect=on_reconnect,
     )
-    
+
     options = TunGoOptions(local_port=8000, subdomain="my-app")
     client = TunGoClient(options, events)
-    
+
     await client.start()
-    
+
     # Keep running
     try:
         await asyncio.Event().wait()
@@ -411,7 +413,7 @@ async def main():
         retry_interval=3.0,
         log_level="debug",
     )
-    
+
     # Option 2: Using server_host and control_port (legacy)
     # options = TunGoOptions(
     #     server_host="tunnel.mycompany.com",
@@ -420,10 +422,10 @@ async def main():
     #     subdomain="my-api",
     #     secret_key="my-secret-key",
     # )
-    
+
     client = TunGoClient(options)
     await client.start()
-    
+
     try:
         await asyncio.Event().wait()
     except KeyboardInterrupt:
@@ -435,40 +437,44 @@ asyncio.run(main())
 ## Best Practices
 
 1. **Use context manager pattern** (when available):
-   ```python
-   async with TunGoClient(options) as client:
-       tunnel = await client.start()
-       # Do work
-   ```
+
+    ```python
+    async with TunGoClient(options) as client:
+        tunnel = await client.start()
+        # Do work
+    ```
 
 2. **Handle errors gracefully**:
-   ```python
-   try:
-       await client.start()
-   except TimeoutError:
-       print("Connection timeout")
-   except Exception as e:
-       print(f"Failed: {e}")
-   ```
+
+    ```python
+    try:
+        await client.start()
+    except TimeoutError:
+        print("Connection timeout")
+    except Exception as e:
+        print(f"Failed: {e}")
+    ```
 
 3. **Custom subdomains for consistency**:
-   ```python
-   options = TunGoOptions(
-       local_port=8000,
-       subdomain="my-stable-subdomain",
-   )
-   ```
+
+    ```python
+    options = TunGoOptions(
+        local_port=8000,
+        subdomain="my-stable-subdomain",
+    )
+    ```
 
 4. **Environment variables**:
-   ```python
-   import os
-   
-   options = TunGoOptions(
-       local_port=int(os.getenv("PORT", "8000")),
-       server_host=os.getenv("TUNGO_HOST", "localhost"),
-       subdomain=os.getenv("TUNGO_SUBDOMAIN"),
-   )
-   ```
+
+    ```python
+    import os
+
+    options = TunGoOptions(
+        local_port=int(os.getenv("PORT", "8000")),
+        server_host=os.getenv("TUNGO_HOST", "localhost"),
+        subdomain=os.getenv("TUNGO_SUBDOMAIN"),
+    )
+    ```
 
 ## Architecture
 
@@ -490,11 +496,12 @@ asyncio.run(main())
 ```
 
 **Components:**
-- **WebSocket Client** - Maintains persistent connection using `websockets`
-- **HTTP Proxy** - Forwards requests using `aiohttp`
-- **Async Event Loop** - Built on `asyncio` for high performance
-- **Stream Manager** - Handles multiple concurrent HTTP streams
-- **Reconnection Logic** - Auto-reconnect with exponential backoff
+
+-   **WebSocket Client** - Maintains persistent connection using `websockets`
+-   **HTTP Proxy** - Forwards requests using `aiohttp`
+-   **Async Event Loop** - Built on `asyncio` for high performance
+-   **Stream Manager** - Handles multiple concurrent HTTP streams
+-   **Reconnection Logic** - Auto-reconnect with exponential backoff
 
 ## Troubleshooting
 
@@ -503,6 +510,7 @@ asyncio.run(main())
 **Problem:** Cannot connect to TunGo server
 
 **Solution:**
+
 ```bash
 # Check if server is running
 lsof -i :5555
@@ -517,6 +525,7 @@ cd /path/to/tungo
 **Problem:** Local server not running
 
 **Solution:**
+
 ```bash
 # Start your local server first
 python app.py  # or uvicorn, gunicorn, etc.
@@ -529,12 +538,17 @@ python app.py  # or uvicorn, gunicorn, etc.
 **Solution:**
 
 # Using uv (Recommended)
-uv sync              # Install all dependencies
+
+```bash
+uv sync # Install all dependencies
 uv run fastapi_example.py
 uv run flask_example.py
 uv run webhook_example.py
+```
 
 # Using pip
+
+```bash
 pip install -r requirements.txt
 python fastapi_example.py
 ```
@@ -565,12 +579,15 @@ uv run mypy .
 ```
 
 **Why uv?**
-- ⚡ **10-100x faster** than pip
-- 📦 **Single binary** - no Python required to bootstrap
-- 🔒 **Reproducible** - automatic lockfile generation
-- 🎯 **Simple** - just use `uv run`
 
-Learn more at [docs.astral.sh/uv](https://docs.astral.sh/uv/)r reinstall the package
+-   ⚡ **10-100x faster** than pip
+-   📦 **Single binary** - no Python required to bootstrap
+-   🔒 **Reproducible** - automatic lockfile generation
+-   🎯 **Simple** - just use `uv run`
+
+Learn more at [docs.astral.sh/uv](https://docs.astral.sh/uv/)
+
+```bash
 pip install --force-reinstall tungo-sdk
 ```
 
@@ -588,14 +605,14 @@ python webhook_example.py
 
 ## Comparison
 
-| Feature | Python SDK | Node SDK | CLI Binary |
-|---------|-----------|----------|------------|
-| Installation | `pip install` | `npm install` | Binary setup |
-| Async Support | Native asyncio | Native async/await | N/A |
-| Type Hints | Full | Full TypeScript | None |
-| Integration | Programmatic | Programmatic | Process spawn |
-| Performance | High | High | Medium |
-| Dependencies | 2 packages | 1 package | None |
+| Feature       | Python SDK     | Node SDK           | CLI Binary    |
+| ------------- | -------------- | ------------------ | ------------- |
+| Installation  | `pip install`  | `npm install`      | Binary setup  |
+| Async Support | Native asyncio | Native async/await | N/A           |
+| Type Hints    | Full           | Full TypeScript    | None          |
+| Integration   | Programmatic   | Programmatic       | Process spawn |
+| Performance   | High           | High               | Medium        |
+| Dependencies  | 2 packages     | 1 package          | None          |
 
 ## Development
 
@@ -650,5 +667,5 @@ Contributions welcome! Please open an issue or PR.
 
 ## Support
 
-- [GitHub Issues](https://github.com/sombochea/tungo/issues)
-- [Documentation](https://github.com/sombochea/tungo)
+-   [GitHub Issues](https://github.com/sombochea/tungo/issues)
+-   [Documentation](https://github.com/sombochea/tungo)
