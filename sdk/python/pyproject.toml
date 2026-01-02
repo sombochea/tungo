@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tungo-sdk"
-version = "1.0.0"
+version = "1.0.1"
 description = "TunGo SDK for Python - Expose local servers to the internet"
 authors = [
     {name = "TunGo", email = "info@tungo.dev"}

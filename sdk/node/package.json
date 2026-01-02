@@ -1,6 +1,6 @@
 {
   "name": "@tungo/sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TunGo SDK for Node.js - Expose local servers to the internet",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
