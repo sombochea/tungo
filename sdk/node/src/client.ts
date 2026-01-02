@@ -32,7 +32,7 @@ export class TunGoClient extends EventEmitter {
 
     // Set defaults
     this.options = {
-      serverUrl: options.serverUrl,
+      serverUrl: options.serverUrl || '',
       serverHost: options.serverHost || 'localhost',
       controlPort: options.controlPort || 5555,
       localHost: options.localHost || 'localhost',
@@ -59,7 +59,7 @@ export class TunGoClient extends EventEmitter {
    * Start the tunnel
    */
   async start(): Promise<TunnelInfo> {
-    if (this.ws) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       throw new Error('Tunnel is already running');
     }
 
@@ -250,6 +250,11 @@ export class TunGoClient extends EventEmitter {
       url: publicUrl,
       subdomain: hello.sub_domain!,
     };
+
+    // Preserve subdomain for reconnection
+    if (hello.sub_domain) {
+      this.options.subdomain = hello.sub_domain;
+    }
 
     this.log('info', `Tunnel established: ${this.tunnelInfo.url}`);
 
@@ -455,10 +460,13 @@ export class TunGoClient extends EventEmitter {
    * Handle reconnection logic
    */
   private handleReconnect(): void {
+    // Reset counter if max retries reached, but continue with longer delay
+    let delay = this.options.retryInterval;
     if (this.reconnectAttempts >= this.options.maxRetries) {
-      this.log('error', 'Max reconnection attempts reached');
-      this.emit('error', new Error('Max reconnection attempts reached'));
-      return;
+      this.log('warn', `Max retry attempts (${this.options.maxRetries}) reached, continuing with extended delay...`);
+      this.reconnectAttempts = 0;
+      // Use longer delay after max retries (e.g., 30 seconds)
+      delay = Math.min(this.options.retryInterval * 6, 30000);
     }
 
     this.reconnectAttempts++;
@@ -468,6 +476,30 @@ export class TunGoClient extends EventEmitter {
     this.log('info', `Reconnecting... (attempt ${this.reconnectAttempts}/${this.options.maxRetries})`);
 
     this.reconnectTimer = setTimeout(() => {
+      // Clear WebSocket state before reconnecting
+      if (this.ws) {
+        try {
+          this.ws.removeAllListeners();
+          this.ws.terminate();
+        } catch (err) {
+          // Ignore errors during cleanup
+        }
+        this.ws = null;
+      }
+      
+      // Clear streams
+      for (const [streamId, req] of this.streams.entries()) {
+        try {
+          req.destroy();
+        } catch (err) {
+          // Ignore
+        }
+      }
+      this.streams.clear();
+      
+      // Clear tunnel info to allow reconnection
+      this.tunnelInfo = null;
+      
       this.start().catch((err) => {
         this.log('error', `Reconnection failed: ${err.message}`);
         this.handleReconnect();

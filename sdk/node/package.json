@@ -14,6 +14,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "test": "jest --config tests/jest.config.js",
+    "test:watch": "jest --config tests/jest.config.js --watch",
+    "test:manual": "node --loader ts-node/esm tests/manual_reconnect.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -28,12 +31,16 @@
   "author": "TunGo",
   "license": "MIT",
   "dependencies": {
-    "ws": "^8.16.0"
+    "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/ws": "^8.5.10",
-    "typescript": "^5.3.3"
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.3",
+    "@types/ws": "^8.18.1",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -57,7 +57,7 @@ class TunGoClient:
         Raises:
             Exception: If connection fails or times out
         """
-        if self.ws:
+        if self.ws and self.ws.close_code is None:
             raise RuntimeError("Tunnel is already running")
 
         # Build WebSocket URL
@@ -129,8 +129,12 @@ class TunGoClient:
             self.ping_task = None
 
         # Cancel all active streams
-        for task in self.streams.values():
-            task.cancel()
+        for key, value in list(self.streams.items()):
+            try:
+                if isinstance(value, asyncio.Task):
+                    value.cancel()
+            except Exception:
+                pass
         self.streams.clear()
 
         if self.ws:
@@ -181,6 +185,10 @@ class TunGoClient:
             url=public_url,
             subdomain=hello["sub_domain"],
         )
+
+        # Preserve subdomain for reconnection
+        if hello.get("sub_domain"):
+            self.options.subdomain = hello["sub_domain"]
 
     async def _message_loop(self) -> None:
         """Main message handling loop."""
@@ -359,11 +367,15 @@ class TunGoClient:
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic."""
+        # Reset counter if max retries reached, but continue with longer delay
         if self.reconnect_attempts >= self.options.max_retries:
-            logger.error("Max reconnection attempts reached")
-            if self.events.on_error:
-                self.events.on_error(Exception("Max reconnection attempts reached"))
-            return
+            logger.warning(
+                f"Max retry attempts ({self.options.max_retries}) reached, continuing with extended delay..."
+            )
+            self.reconnect_attempts = 0
+            # Use longer delay after max retries (e.g., 30 seconds)
+            delay = min(self.options.retry_interval * 6, 30)
+            await asyncio.sleep(delay)
 
         self.reconnect_attempts += 1
 
@@ -378,6 +390,33 @@ class TunGoClient:
         )
 
         await asyncio.sleep(self.options.retry_interval)
+
+        # Clean up existing connection state before reconnecting
+        if self.ws:
+            try:
+                await self.ws.close()
+            except Exception:
+                pass
+            self.ws = None
+
+        # Cancel ping task if exists
+        if self.ping_task:
+            self.ping_task.cancel()
+            try:
+                await self.ping_task
+            except asyncio.CancelledError:
+                pass
+            self.ping_task = None
+
+        # Clear streams
+        for key, value in list(self.streams.items()):
+            try:
+                if isinstance(value, asyncio.Task):
+                    value.cancel()
+                # ClientSession objects are automatically closed by context manager
+            except Exception:
+                pass
+        self.streams.clear()
 
         try:
             await self.start()
