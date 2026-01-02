@@ -149,8 +149,13 @@ from tungo import TunGoOptions
 
 options = TunGoOptions(
     local_port=8000,          # Required: Local server port to tunnel
+    
+    # Server connection (use ONE of the following):
+    server_url="ws://localhost:5555/ws",  # Full WebSocket URL (supports ws:// or wss://)
+    # OR
     server_host="localhost",  # TunGo server host (default: localhost)
     control_port=5555,        # TunGo server port (default: 5555)
+    
     local_host="localhost",   # Local server host (default: localhost)
     subdomain=None,           # Custom subdomain (optional, random if not set)
     secret_key=None,          # Authentication key (optional)
@@ -160,6 +165,11 @@ options = TunGoOptions(
     log_level="info",         # Log level: debug, info, warn, error
 )
 ```
+
+**Note:** If `server_url` is provided, `server_host` and `control_port` are ignored. The `server_url` can be:
+- Full URL: `ws://tunnel.example.com:5555/ws` or `wss://tunnel.example.com/ws`
+- Host and port: `tunnel.example.com:5555` (automatically adds `ws://` and `/ws`)
+- Just host: `tunnel.example.com` (uses default port 5555)
 
 #### Events
 
@@ -391,9 +401,9 @@ import asyncio
 from tungo import TunGoClient, TunGoOptions
 
 async def main():
+    # Option 1: Using server_url (recommended for production)
     options = TunGoOptions(
-        server_host="tunnel.mycompany.com",
-        control_port=5555,
+        server_url="wss://tunnel.mycompany.com/ws",  # Secure WebSocket
         local_port=8080,
         subdomain="my-api",
         secret_key="my-secret-key",
@@ -401,6 +411,15 @@ async def main():
         retry_interval=3.0,
         log_level="debug",
     )
+    
+    # Option 2: Using server_host and control_port (legacy)
+    # options = TunGoOptions(
+    #     server_host="tunnel.mycompany.com",
+    #     control_port=5555,
+    #     local_port=8080,
+    #     subdomain="my-api",
+    #     secret_key="my-secret-key",
+    # )
     
     client = TunGoClient(options)
     await client.start()

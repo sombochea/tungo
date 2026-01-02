@@ -3,12 +3,20 @@
  */
 export interface TunGoOptions {
   /**
+   * Full server WebSocket URL (e.g., ws://localhost:5555/ws or wss://tunnel.example.com/ws)
+   * If provided, serverHost and controlPort are ignored
+   */
+  serverUrl?: string;
+
+  /**
    * TunGo server host (default: localhost)
+   * Ignored if serverUrl is set
    */
   serverHost?: string;
 
   /**
    * Control port of the TunGo server (default: 5555)
+   * Ignored if serverUrl is set
    */
   controlPort?: number;
 
@@ -66,16 +74,6 @@ export interface TunnelInfo {
    * The assigned subdomain
    */
   subdomain: string;
-
-  /**
-   * Server host
-   */
-  serverHost: string;
-
-  /**
-   * Server port
-   */
-  serverPort: number;
 }
 
 /**

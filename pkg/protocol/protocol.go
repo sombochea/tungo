@@ -121,17 +121,19 @@ type ServerHello struct {
 	Type           ServerHelloType `json:"type"`
 	SubDomain      string          `json:"sub_domain,omitempty"`
 	Hostname       string          `json:"hostname,omitempty"`
+	PublicURL      string          `json:"public_url,omitempty"`
 	ClientID       ClientID        `json:"client_id,omitempty"`
 	ReconnectToken *ReconnectToken `json:"reconnect_token,omitempty"`
 	Error          string          `json:"error,omitempty"`
 }
 
 // NewSuccessHello creates a success server hello
-func NewSuccessHello(subDomain, hostname string, clientID ClientID, token *ReconnectToken) *ServerHello {
+func NewSuccessHello(subDomain, hostname, publicURL string, clientID ClientID, token *ReconnectToken) *ServerHello {
 	return &ServerHello{
 		Type:           ServerHelloSuccess,
 		SubDomain:      subDomain,
 		Hostname:       hostname,
+		PublicURL:      publicURL,
 		ClientID:       clientID,
 		ReconnectToken: token,
 	}

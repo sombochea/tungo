@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -178,7 +179,19 @@ func (cs *ControlServer) authenticate(hello *protocol.ClientHello) (*protocol.Se
 
 	// Create success response (stateless, no reconnect token needed)
 	hostname := fmt.Sprintf("%s.%s", subDomain, cs.config.SubDomainSuffix)
-	serverHello := protocol.NewSuccessHello(subDomain, hostname, clientID, nil)
+
+	// Build public URL from format template
+	publicURL := cs.config.PublicURLFormat
+	if publicURL == "" {
+		// Fallback if not configured
+		publicURL = fmt.Sprintf("http://%s", hostname)
+	} else {
+		// Replace template variables
+		publicURL = strings.ReplaceAll(cs.config.PublicURLFormat, "{{ .subdomain }}", subDomain)
+		publicURL = strings.ReplaceAll(publicURL, "{{ .port }}", fmt.Sprintf("%d", cs.config.Port))
+	}
+
+	serverHello := protocol.NewSuccessHello(subDomain, hostname, publicURL, clientID, nil)
 
 	return serverHello, clientID, subDomain, nil
 }

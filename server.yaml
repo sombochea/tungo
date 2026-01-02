@@ -23,6 +23,12 @@ allow_anonymous: true
 # Domain settings
 subdomain_suffix: "localhost"
 
+# Public URL format (supports template variables: {{ .subdomain }}, {{ .port }})
+# Examples:
+#   Local dev:  "http://{{ .subdomain }}.localhost:{{ .port }}"
+#   Production: "https://{{ .subdomain }}.tungo.dev"
+public_url_format: "http://{{ .subdomain }}.localhost:{{ .port }}"
+
 # Logging
 log_level: "info"      # debug, info, warn, error, fatal
 log_format: "json"     # json or console

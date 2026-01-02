@@ -13,11 +13,15 @@ class TunGoOptions:
     local_port: int
     """Local server port to tunnel (required)."""
 
+    server_url: Optional[str] = None
+    """Full server WebSocket URL (e.g., ws://localhost:5555/ws or wss://tunnel.example.com/ws).
+    If provided, server_host and control_port are ignored."""
+
     server_host: str = "localhost"
-    """TunGo server host (default: localhost)."""
+    """TunGo server host (default: localhost). Ignored if server_url is set."""
 
     control_port: int = 5555
-    """Control port of the TunGo server (default: 5555)."""
+    """Control port of the TunGo server (default: 5555). Ignored if server_url is set."""
 
     local_host: str = "localhost"
     """Local server host (default: localhost)."""
@@ -50,12 +54,6 @@ class TunnelInfo:
 
     subdomain: str
     """The assigned subdomain."""
-
-    server_host: str
-    """Server host."""
-
-    server_port: int
-    """Server port."""
 
 
 @dataclass

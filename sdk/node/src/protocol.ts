@@ -50,6 +50,7 @@ export interface ServerHello {
   type: ServerHelloType;
   sub_domain?: string;
   hostname?: string;
+  public_url?: string;
   client_id?: string;
   reconnect_token?: { token: string };
   error?: string;

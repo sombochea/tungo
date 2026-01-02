@@ -60,7 +60,18 @@ class TunGoClient:
         if self.ws:
             raise RuntimeError("Tunnel is already running")
 
-        ws_url = f"ws://{self.options.server_host}:{self.options.control_port}/ws"
+        # Build WebSocket URL
+        if self.options.server_url:
+            ws_url = self.options.server_url
+            # Ensure URL starts with ws:// or wss://
+            if not ws_url.startswith(("ws://", "wss://")):
+                ws_url = f"ws://{ws_url}"
+            # Ensure URL ends with /ws path
+            if not ws_url.endswith("/ws"):
+                ws_url = f"{ws_url}/ws" if ws_url.endswith("/") else f"{ws_url}/ws"
+        else:
+            ws_url = f"ws://{self.options.server_host}:{self.options.control_port}/ws"
+
         logger.info(f"Connecting to TunGo server: {ws_url}")
 
         try:
@@ -160,11 +171,15 @@ class TunGoClient:
             error = hello.get("error", f"Server hello failed: {hello.get('type')}")
             raise Exception(error)
 
+        # Use public_url from server if available, otherwise construct from hostname
+        public_url = hello.get("public_url")
+        if not public_url:
+            # Fallback for older servers
+            public_url = f"http://{hello['hostname']}"
+
         self.tunnel_info = TunnelInfo(
-            url=f"http://{hello['hostname']}",
+            url=public_url,
             subdomain=hello["sub_domain"],
-            server_host=self.options.server_host,
-            server_port=self.options.control_port,
         )
 
     async def _message_loop(self) -> None:

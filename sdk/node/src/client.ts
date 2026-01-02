@@ -19,7 +19,7 @@ import {
  * TunGo Client - Expose your local server to the internet
  */
 export class TunGoClient extends EventEmitter {
-  private options: Required<Omit<TunGoOptions, 'clientBinaryPath' | 'tls'>>;
+  private options: Required<TunGoOptions>;
   private ws: WebSocket | null = null;
   private tunnelInfo: TunnelInfo | null = null;
   private reconnectAttempts = 0;
@@ -32,6 +32,7 @@ export class TunGoClient extends EventEmitter {
 
     // Set defaults
     this.options = {
+      serverUrl: options.serverUrl,
       serverHost: options.serverHost || 'localhost',
       controlPort: options.controlPort || 5555,
       localHost: options.localHost || 'localhost',
@@ -63,7 +64,21 @@ export class TunGoClient extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
-      const wsUrl = `ws://${this.options.serverHost}:${this.options.controlPort}/ws`;
+      // Build WebSocket URL
+      let wsUrl: string;
+      if (this.options.serverUrl) {
+        wsUrl = this.options.serverUrl;
+        // Ensure URL starts with ws:// or wss://
+        if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+          wsUrl = `ws://${wsUrl}`;
+        }
+        // Ensure URL ends with /ws path
+        if (!wsUrl.endsWith('/ws')) {
+          wsUrl = wsUrl.endsWith('/') ? `${wsUrl}ws` : `${wsUrl}/ws`;
+        }
+      } else {
+        wsUrl = `ws://${this.options.serverHost}:${this.options.controlPort}/ws`;
+      }
 
       this.log('info', `Connecting to TunGo server: ${wsUrl}`);
 
@@ -228,11 +243,12 @@ export class TunGoClient extends EventEmitter {
       return;
     }
 
+    // Use public_url from server if available, otherwise construct from hostname
+    const publicUrl = hello.public_url || `http://${hello.hostname}`;
+
     this.tunnelInfo = {
-      url: `http://${hello.hostname}`,
+      url: publicUrl,
       subdomain: hello.sub_domain!,
-      serverHost: this.options.serverHost,
-      serverPort: this.options.controlPort,
     };
 
     this.log('info', `Tunnel established: ${this.tunnelInfo.url}`);

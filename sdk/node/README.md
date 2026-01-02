@@ -183,9 +183,9 @@ await client.start();
 ```typescript
 import { TunGoClient } from '@tungo/sdk';
 
+// Option 1: Using serverUrl (recommended for production)
 const client = new TunGoClient({
-  serverHost: 'tunnel.mycompany.com',
-  controlPort: 5555,
+  serverUrl: 'wss://tunnel.mycompany.com/ws',  // Secure WebSocket
   localPort: 8080,
   subdomain: 'my-api',
   secretKey: 'my-secret-key',
@@ -193,6 +193,15 @@ const client = new TunGoClient({
   retryInterval: 3000,
   logLevel: 'debug',
 });
+
+// Option 2: Using serverHost and controlPort (legacy)
+// const client = new TunGoClient({
+//   serverHost: 'tunnel.mycompany.com',
+//   controlPort: 5555,
+//   localPort: 8080,
+//   subdomain: 'my-api',
+//   secretKey: 'my-secret-key',
+// });
 
 await client.start();
 ```
