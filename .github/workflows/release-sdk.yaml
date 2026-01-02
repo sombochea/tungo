@@ -81,22 +81,12 @@ jobs:
             - name: Check package
               working-directory: sdk/python
               run: |
-                  uv pip install twine
-                  uv run twine check dist/*
-
-            - name: Publish to PyPI
-              working-directory: sdk/python
+          uv tool run twine check dist/*
               env:
                   TWINE_USERNAME: __token__
                   TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
               run: |
-                  uv run twine upload dist/*
-
-            - name: Create Python SDK Release
-              uses: softprops/action-gh-release@v2
-              with:
-                  tag_name: ${{ github.ref_name }}
-                  name: Python SDK v${{ needs.detect-changes.outputs.python-version }}
+          uv tool run twine upload dist/*
                   body: |
                       ## Python SDK v${{ needs.detect-changes.outputs.python-version }}
 
@@ -137,11 +127,7 @@ jobs:
               working-directory: sdk/node
               run: |
                   VERSION="${{ needs.detect-changes.outputs.node-version }}"
-                  npm version $VERSION --no-git-tag-version
-                  echo "Updated version to $VERSION"
-                  cat package.json | grep '"version"'
-
-            - name: Run tests
+          sed -i 's/"version": ".*"/"version": "'"$VERSION"'"/' package.json
               working-directory: sdk/node
               run: npm test
 

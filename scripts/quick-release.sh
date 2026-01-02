@@ -53,11 +53,23 @@ if [[ -z "$VERSION" ]]; then
     exit 1
 fi
 
+# Ask about force flag
+echo ""
+read -p "Force overwrite existing tag? (y/N) " -n 1 -r
+echo
+FORCE_FLAG=""
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    FORCE_FLAG="--force"
+fi
+
 # Confirm
 echo ""
 echo "Ready to release:"
 echo "  SDK: $SDK_TYPE"
 echo "  Version: $VERSION"
+if [[ -n "$FORCE_FLAG" ]]; then
+    echo "  Mode: Force (will overwrite existing tag)"
+fi
 echo ""
 read -p "Continue? (y/N) " -n 1 -r
 echo
@@ -68,4 +80,4 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # Run the release script
-"$SCRIPT_DIR/release-sdk.sh" "$SDK_TYPE" "$VERSION"
+"$SCRIPT_DIR/release-sdk.sh" "$SDK_TYPE" "$VERSION" $FORCE_FLAG

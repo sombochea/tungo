@@ -4,10 +4,11 @@
 # Automates version bumping and tag creation for SDK releases
 #
 # Usage:
-#   ./scripts/release-sdk.sh [python|node|both] [version]
+#   ./scripts/release-sdk.sh [python|node|both] [version] [-f|--force]
 #   ./scripts/release-sdk.sh python 1.0.1
 #   ./scripts/release-sdk.sh node 1.0.1
 #   ./scripts/release-sdk.sh both 1.0.1
+#   ./scripts/release-sdk.sh both 1.0.1 --force
 
 set -e
 
@@ -25,6 +26,15 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 # Parse arguments
 SDK_TYPE="${1:-both}"
 VERSION="${2}"
+FORCE_FLAG=""
+FORCE_PUSH=""
+
+# Check for force flag
+if [[ "${3}" == "-f" || "${3}" == "--force" ]]; then
+    FORCE_FLAG="-f"
+    FORCE_PUSH="--force"
+    echo -e "${YELLOW}Force mode enabled - will overwrite existing tags${NC}"
+fi
 
 # Validate arguments
 if [[ ! "$SDK_TYPE" =~ ^(python|node|both)$ ]]; then
@@ -145,8 +155,12 @@ git commit -m "$COMMIT_MSG" || echo -e "${YELLOW}No changes to commit${NC}"
 
 # Create and push tag
 echo ""
-echo -e "${BLUE}Creating tag: $TAG_NAME${NC}"
-git tag -a "$TAG_NAME" -m "$COMMIT_MSG"
+if [[ -n "$FORCE_FLAG" ]]; then
+    echo -e "${YELLOW}Creating/overwriting tag: $TAG_NAME${NC}"
+else
+    echo -e "${BLUE}Creating tag: $TAG_NAME${NC}"
+fi
+git tag $FORCE_FLAG -a "$TAG_NAME" -m "$COMMIT_MSG"
 
 echo ""
 echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
@@ -160,7 +174,11 @@ echo "   git show $TAG_NAME"
 echo ""
 echo "2. Push to trigger the release:"
 echo -e "   ${GREEN}git push origin $CURRENT_BRANCH${NC}"
-echo -e "   ${GREEN}git push origin $TAG_NAME${NC}"
+if [[ -n "$FORCE_PUSH" ]]; then
+    echo -e "   ${GREEN}git push origin $TAG_NAME $FORCE_PUSH${NC}"
+else
+    echo -e "   ${GREEN}git push origin $TAG_NAME${NC}"
+fi
 echo ""
 echo "3. The GitHub Actions workflow will:"
 if [[ "$SDK_TYPE" == "python" || "$SDK_TYPE" == "both" ]]; then
