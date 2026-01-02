@@ -1,0 +1,174 @@
+name: Release SDK Packages
+
+on:
+    push:
+        tags:
+            - "sdk-*"
+
+jobs:
+    # Determine what changed based on tag
+    detect-changes:
+        name: Detect Changes
+        runs-on: ubuntu-latest
+        outputs:
+            python-version: ${{ steps.parse.outputs.python-version }}
+            node-version: ${{ steps.parse.outputs.node-version }}
+            release-python: ${{ steps.parse.outputs.release-python }}
+            release-node: ${{ steps.parse.outputs.release-node }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Parse tag
+              id: parse
+              run: |
+                  TAG="${{ github.ref_name }}"
+                  echo "Tag: $TAG"
+
+                  # Extract version (e.g., sdk-1.0.0 or sdk-python-1.0.0 or sdk-node-1.0.0)
+                  if [[ $TAG =~ ^sdk-python-(.+)$ ]]; then
+                    echo "release-python=true" >> $GITHUB_OUTPUT
+                    echo "release-node=false" >> $GITHUB_OUTPUT
+                    echo "python-version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+                    echo "Releasing Python SDK v${BASH_REMATCH[1]}"
+                  elif [[ $TAG =~ ^sdk-node-(.+)$ ]]; then
+                    echo "release-python=false" >> $GITHUB_OUTPUT
+                    echo "release-node=true" >> $GITHUB_OUTPUT
+                    echo "node-version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+                    echo "Releasing Node.js SDK v${BASH_REMATCH[1]}"
+                  elif [[ $TAG =~ ^sdk-(.+)$ ]]; then
+                    # Release both if no specific SDK mentioned
+                    echo "release-python=true" >> $GITHUB_OUTPUT
+                    echo "release-node=true" >> $GITHUB_OUTPUT
+                    echo "python-version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+                    echo "node-version=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
+                    echo "Releasing both SDKs v${BASH_REMATCH[1]}"
+                  fi
+
+    # Python SDK Release
+    release-python:
+        name: Release Python SDK to PyPI
+        runs-on: ubuntu-latest
+        needs: detect-changes
+        if: needs.detect-changes.outputs.release-python == 'true'
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.11"
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                  enable-cache: true
+
+            - name: Update version in pyproject.toml
+              working-directory: sdk/python
+              run: |
+                  VERSION="${{ needs.detect-changes.outputs.python-version }}"
+                  sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
+                  echo "Updated version to $VERSION"
+                  grep "^version" pyproject.toml
+
+            - name: Build package
+              working-directory: sdk/python
+              run: |
+                  uv build
+
+            - name: Check package
+              working-directory: sdk/python
+              run: |
+                  uv pip install twine
+                  uv run twine check dist/*
+
+            - name: Publish to PyPI
+              working-directory: sdk/python
+              env:
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+              run: |
+                  uv run twine upload dist/*
+
+            - name: Create Python SDK Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  name: Python SDK v${{ needs.detect-changes.outputs.python-version }}
+                  body: |
+                      ## Python SDK v${{ needs.detect-changes.outputs.python-version }}
+
+                      ### Installation
+                      ```bash
+                      pip install tungo-sdk==${{ needs.detect-changes.outputs.python-version }}
+                      ```
+
+                      ### PyPI
+                      https://pypi.org/project/tungo-sdk/${{ needs.detect-changes.outputs.python-version }}/
+                  files: |
+                      sdk/python/dist/*
+
+    # Node.js SDK Release
+    release-node:
+        name: Release Node.js SDK to npm
+        runs-on: ubuntu-latest
+        needs: detect-changes
+        if: needs.detect-changes.outputs.release-node == 'true'
+        permissions:
+            contents: read
+            id-token: write
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "20"
+                  registry-url: "https://registry.npmjs.org"
+
+            - name: Install dependencies
+              working-directory: sdk/node
+              run: npm ci
+
+            - name: Update version in package.json
+              working-directory: sdk/node
+              run: |
+                  VERSION="${{ needs.detect-changes.outputs.node-version }}"
+                  npm version $VERSION --no-git-tag-version
+                  echo "Updated version to $VERSION"
+                  cat package.json | grep '"version"'
+
+            - name: Run tests
+              working-directory: sdk/node
+              run: npm test
+
+            - name: Build package
+              working-directory: sdk/node
+              run: npm run build
+
+            - name: Publish to npm
+              working-directory: sdk/node
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+              run: npm publish --provenance --access public
+
+            - name: Create Node.js SDK Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  name: Node.js SDK v${{ needs.detect-changes.outputs.node-version }}
+                  body: |
+                      ## Node.js SDK v${{ needs.detect-changes.outputs.node-version }}
+
+                      ### Installation
+                      ```bash
+                      npm install @tungo/sdk@${{ needs.detect-changes.outputs.node-version }}
+                      ```
+
+                      ### npm
+                      https://www.npmjs.com/package/@tungo/sdk/v/${{ needs.detect-changes.outputs.node-version }}
+                  files: |
+                      sdk/node/dist/*
