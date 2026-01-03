@@ -1,4 +1,4 @@
-package com.cubetiqs.tungo.protocol;
+package com.github.sombochea.tungo.protocol;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

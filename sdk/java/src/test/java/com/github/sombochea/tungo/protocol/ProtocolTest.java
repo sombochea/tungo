@@ -1,6 +1,7 @@
-package com.cubetiqs.tungo.protocol;
+package com.github.sombochea.tungo.protocol;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class ProtocolTest {

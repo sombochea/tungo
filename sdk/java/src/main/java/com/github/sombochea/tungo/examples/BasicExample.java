@@ -1,9 +1,9 @@
-package com.cubetiqs.tungo.examples;
+package com.github.sombochea.tungo.examples;
 
-import com.cubetiqs.tungo.TunGoClient;
-import com.cubetiqs.tungo.TunGoEventListener;
-import com.cubetiqs.tungo.TunGoOptions;
-import com.cubetiqs.tungo.TunnelInfo;
+import com.github.sombochea.tungo.TunGoClient;
+import com.github.sombochea.tungo.TunGoEventListener;
+import com.github.sombochea.tungo.TunGoOptions;
+import com.github.sombochea.tungo.TunnelInfo;
 
 /**
  * Basic example of using TunGo SDK

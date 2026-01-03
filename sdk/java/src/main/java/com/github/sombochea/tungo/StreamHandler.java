@@ -1,6 +1,6 @@
-package com.cubetiqs.tungo;
+package com.github.sombochea.tungo;
 
-import com.cubetiqs.tungo.protocol.MessageType;
+import com.github.sombochea.tungo.protocol.MessageType;
 import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

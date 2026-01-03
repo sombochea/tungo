@@ -1,6 +1,6 @@
 # TunGo Java SDK
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.cubetiqs/tungo-sdk.svg)](https://search.maven.org/artifact/com.cubetiqs/tungo-sdk)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.sombochea/tungo-sdk.svg)](https://search.maven.org/artifact/com.github.sombochea/tungo-sdk)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Java SDK for TunGo - Expose your local server to the internet with ease.
@@ -25,7 +25,7 @@ Java SDK for TunGo - Expose your local server to the internet with ease.
 
 ```xml
 <dependency>
-    <groupId>com.cubetiqs</groupId>
+    <groupId>com.github.sombochea</groupId>
     <artifactId>tungo-sdk</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -35,7 +35,7 @@ Java SDK for TunGo - Expose your local server to the internet with ease.
 
 ```gradle
 dependencies {
-    implementation 'com.cubetiqs:tungo-sdk:1.0.0'
+    implementation 'com.github.sombochea:tungo-sdk:1.0.0'
 }
 ```
 
@@ -52,7 +52,7 @@ mvn clean install
 ### Basic Usage
 
 ```java
-import com.cubetiqs.tungo.*;
+import com.github.sombochea.tungo.*;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -273,7 +273,7 @@ TunGoOptions options = TunGoOptions.builder(3000)
 
 ## Examples
 
-See the [examples](src/main/java/com/cubetiqs/tungo/examples) directory for more:
+See the [examples](src/main/java/com/github/sombochea/tungo/examples) directory for more:
 
 - **BasicExample.java** - Simple tunnel setup
 - **CompleteExample.java** - With local HTTP server and custom HTML
@@ -285,10 +285,10 @@ Run examples:
 mvn clean package
 
 # Run basic example
-mvn exec:java -Dexec.mainClass="com.cubetiqs.tungo.examples.BasicExample"
+mvn exec:java -Dexec.mainClass="com.github.sombochea.tungo.examples.BasicExample"
 
 # Run complete example
-mvn exec:java -Dexec.mainClass="com.cubetiqs.tungo.examples.CompleteExample"
+mvn exec:java -Dexec.mainClass="com.github.sombochea.tungo.examples.CompleteExample"
 ```
 
 ## Testing

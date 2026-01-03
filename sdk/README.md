@@ -51,7 +51,7 @@ Expose your local Java servers to the internet (Java 8+).
 
 ```xml
 <dependency>
-    <groupId>com.cubetiqs</groupId>
+    <groupId>com.github.sombochea</groupId>
     <artifactId>tungo-sdk</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -60,7 +60,7 @@ Expose your local Java servers to the internet (Java 8+).
 **Quick Start:**
 
 ```java
-import com.cubetiqs.tungo.*;
+import com.github.sombochea.tungo.*;
 
 TunGoOptions options = TunGoOptions.builder(3000).build();
 TunGoClient client = new TunGoClient(options);
@@ -70,10 +70,31 @@ System.out.println("Public URL: " + info.getUrl());
 
 [View Java SDK Documentation](./java/README.md)
 
+### [Dart SDK](./dart)
+
+Expose your local Dart/Flutter servers to the internet.
+
+```yaml
+dependencies:
+  tungo_sdk: ^1.0.0
+```
+
+**Quick Start:**
+
+```dart
+import 'package:tungo_sdk/tungo.dart';
+
+final options = TunGoOptions(localPort: 3000);
+final client = TunGoClient(options);
+final info = await client.start();
+print('Public URL: ${info.url}');
+```
+
+[View Dart SDK Documentation](./dart/README.md)
+
 ## Coming Soon
 
 -   **Go SDK** - `sdk/go`
--   **Dart SDK** - `sdk/dart`
 -   **Rust SDK** - `sdk/rust`
 -   **PHP SDK** - `sdk/php`
 -   **Ruby SDK** - `sdk/ruby`

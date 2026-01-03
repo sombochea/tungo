@@ -1,6 +1,6 @@
-package com.cubetiqs.tungo;
+package com.github.sombochea.tungo;
 
-import com.cubetiqs.tungo.protocol.*;
+import com.github.sombochea.tungo.protocol.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,4 +1,4 @@
-package com.cubetiqs.tungo;
+package com.github.sombochea.tungo;
 
 /**
  * Event listener interface for TunGo Client events

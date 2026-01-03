@@ -1,0 +1,25 @@
+name: tungo_sdk
+description: TunGo SDK for Dart - Expose your local server to the internet via secure tunnels
+version: 1.0.0
+homepage: https://github.com/sombochea/tungo
+repository: https://github.com/sombochea/tungo
+issue_tracker: https://github.com/sombochea/tungo/issues
+
+environment:
+  sdk: '>=2.17.0 <4.0.0'
+
+dependencies:
+  web_socket_channel: ^3.0.3
+  http: ^1.2.0
+  logging: ^1.2.0
+  uuid: ^4.3.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
+
+topics:
+  - tunnel
+  - networking
+  - proxy
+  - ngrok
