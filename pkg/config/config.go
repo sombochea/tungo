@@ -139,7 +139,7 @@ func (c *ServerConfig) Validate() error {
 
 // ClientConfig represents the client configuration
 type ClientConfig struct {
-	ServerURL       string        `mapstructure:"server_url"`      // Full server URL (e.g., https://tungo.example.com or wss://tungo.example.com)
+	ServerURL       string        `mapstructure:"server_url"`     // Full server URL (e.g., https://tungo.example.com or wss://tungo.example.com)
 	ServerHost      string        `mapstructure:"server_host"`    // Primary server (backward compatibility)
 	ControlPort     int           `mapstructure:"control_port"`   // Primary port (backward compatibility)
 	ServerCluster   []ServerNode  `mapstructure:"server_cluster"` // Multiple servers for failover
@@ -275,7 +275,7 @@ func (c *ClientConfig) GetServerList() []ServerNode {
 			return []ServerNode{{Host: host, Port: port, Secure: secure}}
 		}
 	}
-	
+
 	if len(c.ServerCluster) > 0 {
 		return c.ServerCluster
 	}
@@ -287,10 +287,10 @@ func (c *ClientConfig) GetServerList() []ServerNode {
 // Supports formats: https://example.com, wss://example.com:5000, http://example.com:8080
 func ParseServerURL(serverURL string) (host string, port int, secure bool, err error) {
 	// Add scheme if not present
-	if !strings.HasPrefix(serverURL, "http://") && 
-	   !strings.HasPrefix(serverURL, "https://") && 
-	   !strings.HasPrefix(serverURL, "ws://") && 
-	   !strings.HasPrefix(serverURL, "wss://") {
+	if !strings.HasPrefix(serverURL, "http://") &&
+		!strings.HasPrefix(serverURL, "https://") &&
+		!strings.HasPrefix(serverURL, "ws://") &&
+		!strings.HasPrefix(serverURL, "wss://") {
 		serverURL = "https://" + serverURL
 	}
 
@@ -301,10 +301,10 @@ func ParseServerURL(serverURL string) (host string, port int, secure bool, err e
 	}
 
 	host = parsedURL.Hostname()
-	
+
 	// Determine if secure based on scheme
 	secure = (parsedURL.Scheme == "https" || parsedURL.Scheme == "wss")
-	
+
 	// Determine port
 	if parsedURL.Port() != "" {
 		// Explicit port in URL
@@ -331,7 +331,7 @@ func ParseServerURL(serverURL string) (host string, port int, secure bool, err e
 func parseURL(rawURL string) (*urlParts, error) {
 	// Simple URL parser for our needs
 	var parts urlParts
-	
+
 	// Extract scheme
 	schemeIdx := strings.Index(rawURL, "://")
 	if schemeIdx == -1 {
@@ -339,7 +339,7 @@ func parseURL(rawURL string) (*urlParts, error) {
 	}
 	parts.Scheme = rawURL[:schemeIdx]
 	rest := rawURL[schemeIdx+3:]
-	
+
 	// Extract host and port
 	pathIdx := strings.Index(rest, "/")
 	var hostPort string
@@ -348,7 +348,7 @@ func parseURL(rawURL string) (*urlParts, error) {
 	} else {
 		hostPort = rest[:pathIdx]
 	}
-	
+
 	// Split host and port
 	portIdx := strings.LastIndex(hostPort, ":")
 	if portIdx != -1 && strings.Count(hostPort, ":") == 1 {
@@ -359,7 +359,7 @@ func parseURL(rawURL string) (*urlParts, error) {
 		// No port or IPv6
 		parts.Host = hostPort
 	}
-	
+
 	return &parts, nil
 }
 

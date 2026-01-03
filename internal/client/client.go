@@ -168,7 +168,7 @@ func (tc *TunnelClient) Connect() error {
 	// Set request headers
 	headers := make(map[string][]string)
 	headers["User-Agent"] = []string{fmt.Sprintf("TunGo-Client/%s", version.GetShortVersion())}
-	
+
 	// For Cloudflare and standard HTTPS/WSS ports, use clean Host header without port
 	if currentServer.Secure && currentServer.Port == 443 {
 		headers["Host"] = []string{currentServer.Host}
