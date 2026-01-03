@@ -149,7 +149,9 @@ func main() {
 		// Extract subdomain
 		subDomain := extractSubDomain(host, cfg.SubDomainSuffix)
 		if subDomain == "" {
-			return c.Status(fiber.StatusNotFound).SendString("Tunnel not found")
+			return sendPrettyError(c, fiber.StatusNotFound,
+				"Tunnel Not Found",
+				"No tunnel is configured for this subdomain. Please check your tunnel URL and ensure your client is connected.")
 		}
 
 		// Check if we need to proxy to another server (distributed mode)
@@ -180,7 +182,9 @@ func main() {
 
 			if err := serverProxy.ProxyToServer(w, r, tunnelInfo); err != nil {
 				log.Error().Err(err).Msg("Failed to proxy request")
-				return c.Status(fiber.StatusBadGateway).SendString("Failed to proxy request")
+				return sendPrettyError(c, fiber.StatusBadGateway,
+					"Proxy Error",
+					"Unable to forward your request to the target server. The remote tunnel server may be unavailable.")
 			}
 
 			// Copy response headers back to Fiber
@@ -196,7 +200,9 @@ func main() {
 		// Get client connection from local connection manager
 		client, exists := connMgr.GetClientBySubDomain(subDomain)
 		if !exists {
-			return c.Status(fiber.StatusBadGateway).SendString("Tunnel not active")
+			return sendPrettyError(c, fiber.StatusServiceUnavailable,
+				"Tunnel Not Active",
+				"This tunnel is currently not connected. Please start your tunnel client and try again.")
 		}
 
 		// Handle the request through the tunnel
@@ -294,6 +300,90 @@ func extractSubDomain(host, suffix string) string {
 
 	subDomain := host[:len(host)-len(suffix)-1]
 	return subDomain
+}
+
+// sendPrettyError sends a user-friendly HTML error response
+func sendPrettyError(c fiber.Ctx, status int, title, message string) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%s</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .error-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            color: #666;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        .status-code {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🔌</div>
+        <h1>%s</h1>
+        <p>%s</p>
+        <div class="status-code">Status Code: %d</div>
+        <div class="footer">
+            Powered by <a href="https://github.com/sombochea/tungo">TunGo</a>
+        </div>
+    </div>
+</body>
+</html>`, title, title, message, status)
+	return c.Status(status).SendString(html)
 }
 
 // responseWriter is a wrapper to adapt fiber context to http.ResponseWriter

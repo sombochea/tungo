@@ -61,11 +61,15 @@ func (ph *ProxyHandler) HandleRequest(c fiber.Ctx, client *ClientConnection) err
 
 	msg, err := protocol.NewMessage(protocol.MessageTypeInit, streamID, initMsg)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to initialize stream")
+		return ph.sendPrettyError(c, fiber.StatusInternalServerError,
+			"Stream Initialization Failed",
+			"Unable to initialize the tunnel stream. Please try reconnecting your tunnel client.")
 	}
 
 	if err := client.SendMessage(msg); err != nil {
-		return c.Status(fiber.StatusBadGateway).SendString("Failed to send init message")
+		return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			"Communication Error",
+			"Failed to communicate with the tunnel client. The connection may be unstable.")
 	}
 
 	// Wait for the stream to be added to the client (with timeout)
@@ -85,7 +89,9 @@ func (ph *ProxyHandler) HandleRequest(c fiber.Ctx, client *ClientConnection) err
 	// Build HTTP request data
 	requestData, err := ph.buildHTTPRequest(c)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to build request")
+		return ph.sendPrettyError(c, fiber.StatusInternalServerError,
+			"Request Processing Error",
+			"Unable to process your request. Please check your request format and try again.")
 	}
 
 	// Send request data
@@ -94,11 +100,15 @@ func (ph *ProxyHandler) HandleRequest(c fiber.Ctx, client *ClientConnection) err
 	}
 	msg, err = protocol.NewMessage(protocol.MessageTypeData, streamID, dataMsg)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).SendString("Failed to create data message")
+		return ph.sendPrettyError(c, fiber.StatusInternalServerError,
+			"Message Creation Failed",
+			"Unable to create tunnel message. Please try again.")
 	}
 
 	if err := client.SendMessage(msg); err != nil {
-		return c.Status(fiber.StatusBadGateway).SendString("Failed to send request data")
+		return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			"Data Transmission Failed",
+			"Unable to send your request through the tunnel. The connection may have been interrupted.")
 	}
 
 	// Wait for response data with timeout
@@ -130,16 +140,22 @@ func (ph *ProxyHandler) HandleRequest(c fiber.Ctx, client *ClientConnection) err
 			if responseBuffer.Len() > 0 {
 				return ph.sendHTTPResponse(c, responseBuffer)
 			}
-			return c.Status(fiber.StatusBadGateway).SendString("No response data received")
+			return ph.sendPrettyError(c, fiber.StatusBadGateway,
+				"No Response Received",
+				"Your local server didn't respond. Please check if your local application is running and accessible.")
 
 		case <-stream.Done:
 			if responseBuffer.Len() > 0 {
 				return ph.sendHTTPResponse(c, responseBuffer)
 			}
-			return c.Status(fiber.StatusBadGateway).SendString("Stream closed without response")
+			return ph.sendPrettyError(c, fiber.StatusBadGateway,
+				"Connection Closed",
+				"The tunnel connection was closed before receiving a response. Your local server may have stopped or crashed.")
 
 		case <-timeout:
-			return c.Status(fiber.StatusGatewayTimeout).SendString("Request timeout")
+			return ph.sendPrettyError(c, fiber.StatusGatewayTimeout,
+				"Request Timeout",
+				"Your local server took too long to respond (>30s). Please check if your application is experiencing performance issues.")
 		}
 	}
 }
@@ -218,7 +234,9 @@ func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buff
 			Int("buffer_size", len(data)).
 			Str("buffer_preview", string(data[:min(100, len(data))])).
 			Msg("Failed to parse HTTP response")
-		return c.Status(fiber.StatusBadGateway).SendString("Invalid response from backend")
+		return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			"Invalid Response",
+			"Your local server returned an invalid HTTP response. Please ensure your application is sending properly formatted HTTP responses.")
 	}
 	defer resp.Body.Close()
 
@@ -236,7 +254,9 @@ func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buff
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		ph.logger.Error().Err(err).Msg("Failed to read response body")
-		return c.Status(fiber.StatusBadGateway).SendString("Failed to read backend response")
+		return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			"Response Read Error",
+			"Unable to read the full response from your local server. The connection may have been interrupted.")
 	}
 
 	return c.Send(body)
@@ -247,6 +267,90 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// sendPrettyError sends a user-friendly HTML error response
+func (ph *ProxyHandler) sendPrettyError(c fiber.Ctx, status int, title, message string) error {
+	c.Set("Content-Type", "text/html; charset=utf-8")
+	html := fmt.Sprintf(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>%s</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .error-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 600px;
+            text-align: center;
+        }
+        .error-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            font-size: 32px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            color: #666;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        .status-code {
+            display: inline-block;
+            background: #f0f0f0;
+            color: #888;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🔌</div>
+        <h1>%s</h1>
+        <p>%s</p>
+        <div class="status-code">Status Code: %d</div>
+        <div class="footer">
+            Powered by <a href="https://github.com/sombochea/tungo">TunGo</a>
+        </div>
+    </div>
+</body>
+</html>`, title, title, message, status)
+	return c.Status(status).SendString(html)
 }
 
 // ParseHTTPResponse is deprecated - use sendHTTPResponse instead
