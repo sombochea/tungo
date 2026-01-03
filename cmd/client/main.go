@@ -226,8 +226,14 @@ func runClient(cmd *cobra.Command, args []string) {
 		currentServer := tunnelClient.GetCurrentServer()
 
 		if firstConnection {
+			// Use PublicURL if available, otherwise fall back to Hostname
+			publicURL := serverInfo.PublicURL
+			if publicURL == "" {
+				publicURL = fmt.Sprintf("http://%s", serverInfo.Hostname)
+			}
+
 			log.Info().
-				Str("url", fmt.Sprintf("http://%s", serverInfo.Hostname)).
+				Str("url", publicURL).
 				Str("subdomain", serverInfo.SubDomain).
 				Str("server", fmt.Sprintf("%s:%d", currentServer.Host, currentServer.Port)).
 				Int("cluster_size", tunnelClient.GetServerCount()).
@@ -237,7 +243,7 @@ func runClient(cmd *cobra.Command, args []string) {
 			fmt.Println("┌────────────────────────────────────────────────────────────┐")
 			fmt.Printf("│  🌐 Your tunnel is ready!                                  │\n")
 			fmt.Println("├────────────────────────────────────────────────────────────┤")
-			fmt.Printf("│  Public URL:  http://%-36s │\n", serverInfo.Hostname)
+			fmt.Printf("│  Public URL:  %-44s │\n", publicURL)
 			fmt.Printf("│  Local:       http://%-36s │\n", fmt.Sprintf("%s:%d", cfg.LocalHost, cfg.LocalPort))
 			if tunnelClient.GetServerCount() > 1 {
 				fmt.Printf("│  Cluster:     %d servers (auto-failover enabled)%-9s│\n", tunnelClient.GetServerCount(), "")
@@ -246,8 +252,14 @@ func runClient(cmd *cobra.Command, args []string) {
 			fmt.Println()
 			firstConnection = false
 		} else {
+			// Use PublicURL if available, otherwise fall back to Hostname
+			publicURL := serverInfo.PublicURL
+			if publicURL == "" {
+				publicURL = fmt.Sprintf("http://%s", serverInfo.Hostname)
+			}
+
 			log.Info().
-				Str("url", fmt.Sprintf("http://%s", serverInfo.Hostname)).
+				Str("url", publicURL).
 				Str("subdomain", serverInfo.SubDomain).
 				Str("server", fmt.Sprintf("%s:%d", currentServer.Host, currentServer.Port)).
 				Msg("✓ Reconnected successfully!")

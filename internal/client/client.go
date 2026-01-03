@@ -53,6 +53,13 @@ type LocalStream struct {
 	RequestData    []byte // Capture request for introspect
 	ResponseData   []byte // Capture response for introspect
 	captureEnabled bool
+	StartTime      time.Time // Track request start time
+	EndTime        time.Time // Track response end time
+	Method         string    // HTTP method
+	Path           string    // HTTP path
+	SourceIP       string    // Client source IP
+	StatusCode     int       // HTTP status code
+	firstRead      bool      // Track if we've done first read
 }
 
 // NewTunnelClient creates a new tunnel client
@@ -383,6 +390,7 @@ func (tc *TunnelClient) handleInitStream(initMsg *protocol.InitStreamMessage) {
 		Done:           make(chan struct{}),
 		RequestWritten: make(chan struct{}), // Signal channel
 		captureEnabled: tc.config.EnableDashboard,
+		StartTime:      time.Now(), // Record start time
 	}
 
 	tc.addStream(stream)
@@ -406,6 +414,66 @@ func (tc *TunnelClient) proxyToLocal(stream *LocalStream) {
 		case data, ok := <-stream.DataChan:
 			if !ok {
 				return
+			}
+
+			// Parse request on first data chunk (but don't log yet - wait for response)
+			if !requestComplete && len(data) > 0 {
+				// Parse HTTP request line
+				dataStr := string(data)
+				if len(dataStr) > 0 {
+					lines := make([]string, 0)
+					lastIdx := 0
+					for i := 0; i < len(dataStr); i++ {
+						if dataStr[i] == '\n' {
+							lines = append(lines, dataStr[lastIdx:i])
+							lastIdx = i + 1
+							if len(lines) >= 20 { // Parse first 20 lines for headers
+								break
+							}
+						}
+					}
+
+					// Parse request line (first line)
+					if len(lines) > 0 {
+						parts := make([]string, 0)
+						lastIdx := 0
+						for i := 0; i < len(lines[0]); i++ {
+							if lines[0][i] == ' ' {
+								if i > lastIdx {
+									parts = append(parts, lines[0][lastIdx:i])
+								}
+								lastIdx = i + 1
+							}
+						}
+						if lastIdx < len(lines[0]) {
+							parts = append(parts, lines[0][lastIdx:])
+						}
+
+						if len(parts) >= 2 {
+							stream.Method = parts[0]
+							stream.Path = parts[1]
+						}
+					}
+
+					// Parse headers to find X-Forwarded-For or X-Real-IP
+					for i := 1; i < len(lines); i++ {
+						line := lines[i]
+						if len(line) > 16 && (line[:16] == "X-Forwarded-For:" || line[:16] == "x-forwarded-for:") {
+							stream.SourceIP = line[17:]
+							// Trim carriage return if present
+							if len(stream.SourceIP) > 0 && stream.SourceIP[len(stream.SourceIP)-1] == '\r' {
+								stream.SourceIP = stream.SourceIP[:len(stream.SourceIP)-1]
+							}
+							break
+						} else if len(line) > 11 && (line[:11] == "X-Real-IP: " || line[:11] == "x-real-ip: ") {
+							stream.SourceIP = line[11:]
+							if len(stream.SourceIP) > 0 && stream.SourceIP[len(stream.SourceIP)-1] == '\r' {
+								stream.SourceIP = stream.SourceIP[:len(stream.SourceIP)-1]
+							}
+							break
+						}
+					}
+				}
 			}
 
 			// Capture request data if dashboard is enabled
@@ -437,6 +505,44 @@ func (tc *TunnelClient) proxyToLocal(stream *LocalStream) {
 // proxyFromLocal forwards data from the local server to the tunnel
 func (tc *TunnelClient) proxyFromLocal(stream *LocalStream) {
 	defer func() {
+		// Log complete request/response in standard format
+		if stream.StatusCode > 0 && stream.Method != "" {
+			// Use EndTime if set, otherwise use current time
+			endTime := stream.EndTime
+			if endTime.IsZero() {
+				endTime = time.Now()
+			}
+			latency := endTime.Sub(stream.StartTime)
+			timestamp := stream.StartTime.Format("2006/01/02 15:04:05")
+			sourceIP := stream.SourceIP
+			if sourceIP == "" {
+				sourceIP = "-"
+			}
+
+			// Color code status
+			statusColor := ""
+			resetColor := ""
+			if stream.StatusCode >= 200 && stream.StatusCode < 300 {
+				statusColor = "\033[32m" // Green
+				resetColor = "\033[0m"
+			} else if stream.StatusCode >= 300 && stream.StatusCode < 400 {
+				statusColor = "\033[36m" // Cyan
+				resetColor = "\033[0m"
+			} else if stream.StatusCode >= 400 && stream.StatusCode < 500 {
+				statusColor = "\033[33m" // Yellow
+				resetColor = "\033[0m"
+			} else if stream.StatusCode >= 500 {
+				statusColor = "\033[31m" // Red
+				resetColor = "\033[0m"
+			}
+
+			// Format: [timestamp] source_ip "METHOD /path" status req_bytes res_bytes latency_ms
+			fmt.Printf("%s %s \"%s %s\" %s%d%s %d %d %dms\n",
+				timestamp, sourceIP, stream.Method, stream.Path,
+				statusColor, stream.StatusCode, resetColor,
+				stream.BytesSent, stream.BytesRecv, latency.Milliseconds())
+		}
+
 		// Capture the request/response if dashboard is enabled
 		if stream.captureEnabled && len(stream.RequestData) > 0 {
 			introspect.CaptureStream(stream.RequestData, stream.ResponseData)
@@ -466,29 +572,41 @@ func (tc *TunnelClient) proxyFromLocal(stream *LocalStream) {
 			return
 		default:
 			// Set read deadline to avoid blocking forever
-			// Use longer timeout for initial read to allow server to process request
-			stream.LocalConn.SetReadDeadline(time.Now().Add(5 * time.Second))
+			// Use shorter timeout after first read for better responsiveness
+			timeout := 5 * time.Second
+			if stream.firstRead {
+				timeout = 500 * time.Millisecond // Shorter timeout after we've started reading
+			}
+			stream.LocalConn.SetReadDeadline(time.Now().Add(timeout))
 
 			n, err := stream.LocalConn.Read(buf)
 			if err != nil {
 				// Check if it's a timeout (expected) or real error
 				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-					// Timeout means no data yet, check if stream is still active
-					if stream.BytesSent == 0 {
-						// No data has been sent yet, keep waiting
-						continue
+					// Timeout means no more data
+					if stream.BytesRecv > 0 {
+						// We've received data, mark end time and finish
+						stream.EndTime = time.Now()
+						tc.logger.Debug().Str("stream_id", stream.ID.String()).Msg("Read timeout, response complete")
+						return
 					}
-					// Data was sent but no response timeout - done
-					tc.logger.Debug().Str("stream_id", stream.ID.String()).Msg("Read timeout, assuming response complete")
-					return
+					// No data has been received yet, keep waiting
+					continue
 				}
-				if err != io.EOF {
+				if err == io.EOF {
+					// Normal end of response
+					stream.EndTime = time.Now()
+					tc.logger.Debug().Str("stream_id", stream.ID.String()).Msg("EOF received, response complete")
+				} else {
 					tc.logger.Debug().Err(err).Str("stream_id", stream.ID.String()).Msg("Local connection closed")
 				}
 				return
 			}
 
 			if n > 0 {
+				if !stream.firstRead {
+					stream.firstRead = true
+				}
 				stream.BytesRecv += int64(n)
 
 				// Capture response data if dashboard is enabled
@@ -496,15 +614,53 @@ func (tc *TunnelClient) proxyFromLocal(stream *LocalStream) {
 					stream.ResponseData = append(stream.ResponseData, buf[:n]...)
 				}
 
-				// Log what we're reading
-				previewLen := 100
-				if n < previewLen {
-					previewLen = n
+				// Parse and log HTTP response status on first read
+				if stream.BytesRecv == int64(n) && n > 12 {
+					// This is the first chunk, try to extract status code
+					statusLine := string(buf[:n])
+					if len(statusLine) > 12 && statusLine[:5] == "HTTP/" {
+						// Find the end of the status line
+						endIdx := 0
+						for i := 0; i < len(statusLine) && i < 100; i++ {
+							if statusLine[i] == '\n' {
+								endIdx = i
+								break
+							}
+						}
+						if endIdx > 0 {
+							// Parse status code
+							parts := make([]string, 0)
+							lastIdx := 0
+							line := statusLine[:endIdx]
+							for i := 0; i < len(line); i++ {
+								if line[i] == ' ' {
+									if i > lastIdx {
+										parts = append(parts, line[lastIdx:i])
+									}
+									lastIdx = i + 1
+								}
+							}
+							if lastIdx < len(line) {
+								parts = append(parts, line[lastIdx:])
+							}
+
+							if len(parts) >= 2 {
+								// Parse status code
+								statusCode := 0
+								for i := 0; i < len(parts[1]); i++ {
+									if parts[1][i] >= '0' && parts[1][i] <= '9' {
+										statusCode = statusCode*10 + int(parts[1][i]-'0')
+									}
+								}
+								stream.StatusCode = statusCode
+							}
+						}
+					}
 				}
-				tc.logger.Info().
+
+				tc.logger.Debug().
 					Str("stream_id", stream.ID.String()).
 					Int("bytes_read", n).
-					Str("preview", string(buf[:previewLen])).
 					Msg("Read from local server")
 
 				// Send data through tunnel - copy buffer to avoid data race
