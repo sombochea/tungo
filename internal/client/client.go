@@ -1,6 +1,7 @@
 package client
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -131,9 +132,14 @@ func (tc *TunnelClient) Connect() error {
 	// Get current server from cluster
 	currentServer := tc.serverList[tc.currentServerIdx]
 
-	// Build WebSocket URL
+	// Build WebSocket URL with appropriate scheme
+	scheme := "ws"
+	if currentServer.Secure {
+		scheme = "wss"
+	}
+
 	wsURL := url.URL{
-		Scheme: "ws",
+		Scheme: scheme,
 		Host:   fmt.Sprintf("%s:%d", currentServer.Host, currentServer.Port),
 		Path:   "/ws",
 	}
@@ -144,14 +150,40 @@ func (tc *TunnelClient) Connect() error {
 		Int("total_servers", len(tc.serverList)).
 		Msg("Connecting to server")
 
-	// Set dial timeout
+	// Configure WebSocket dialer
 	dialer := websocket.Dialer{
 		HandshakeTimeout: tc.config.ConnectTimeout,
 	}
 
+	// Configure TLS if using secure connection
+	if currentServer.Secure {
+		if tc.config.InsecureTLS {
+			// Skip TLS verification (for testing only)
+			dialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+			tc.logger.Warn().Msg("TLS certificate verification disabled (insecure mode)")
+		}
+		// Otherwise use default TLS config which validates certificates
+	}
+
+	// Set request headers
+	headers := make(map[string][]string)
+	headers["User-Agent"] = []string{fmt.Sprintf("TunGo-Client/%s", version.GetShortVersion())}
+	
+	// For Cloudflare and standard HTTPS/WSS ports, use clean Host header without port
+	if currentServer.Secure && currentServer.Port == 443 {
+		headers["Host"] = []string{currentServer.Host}
+	}
+
 	// Connect to WebSocket
-	conn, _, err := dialer.Dial(wsURL.String(), nil)
+	conn, resp, err := dialer.Dial(wsURL.String(), headers)
 	if err != nil {
+		// Log detailed error information
+		if resp != nil {
+			tc.logger.Error().
+				Int("status_code", resp.StatusCode).
+				Str("status", resp.Status).
+				Msg("WebSocket handshake failed")
+		}
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}
 	tc.conn = conn

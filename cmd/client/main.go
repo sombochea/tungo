@@ -19,6 +19,7 @@ import (
 
 var (
 	cfgFile         string
+	serverURL       string
 	serverHost      string
 	serverPort      int
 	localHost       string
@@ -27,6 +28,7 @@ var (
 	secretKey       string
 	enableDashboard bool
 	dashboardPort   int
+	insecureTLS     bool
 )
 
 func main() {
@@ -61,6 +63,7 @@ func main() {
 
 	// Flags for the root command (tunnel)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
+	rootCmd.Flags().StringVar(&serverURL, "server-url", "", "full server URL with control port (e.g., https://tungo.example.com:5000 or wss://tungo.example.com:5000)")
 	rootCmd.Flags().StringVar(&serverHost, "server", "localhost", "tungo server host")
 	rootCmd.Flags().IntVar(&serverPort, "port", 5555, "tungo server control port")
 	rootCmd.Flags().StringVar(&localHost, "local-host", "localhost", "local server host")
@@ -69,6 +72,7 @@ func main() {
 	rootCmd.Flags().StringVarP(&secretKey, "key", "k", "", "secret key for authentication")
 	rootCmd.Flags().BoolVarP(&enableDashboard, "dashboard", "d", false, "enable introspection dashboard")
 	rootCmd.Flags().IntVar(&dashboardPort, "dashboard-port", 3000, "introspection dashboard port")
+	rootCmd.Flags().BoolVar(&insecureTLS, "insecure", false, "skip TLS certificate verification (for testing only)")
 
 	// Set version template
 	rootCmd.SetVersionTemplate("{{.Version}}\n")
@@ -87,11 +91,19 @@ func runClient(cmd *cobra.Command, args []string) {
 	}
 
 	// Override with command-line flags
-	if serverHost != "" && cmd.Flags().Changed("server") {
-		cfg.ServerHost = serverHost
-	}
-	if cmd.Flags().Changed("port") {
-		cfg.ControlPort = serverPort
+	// ServerURL takes precedence over individual server/port flags
+	if serverURL != "" && cmd.Flags().Changed("server-url") {
+		cfg.ServerURL = serverURL
+		// Clear individual host/port to ensure ServerURL is used
+		cfg.ServerHost = ""
+		cfg.ControlPort = 0
+	} else {
+		if serverHost != "" && cmd.Flags().Changed("server") {
+			cfg.ServerHost = serverHost
+		}
+		if cmd.Flags().Changed("port") {
+			cfg.ControlPort = serverPort
+		}
 	}
 	if localHost != "" && cmd.Flags().Changed("local-host") {
 		cfg.LocalHost = localHost
@@ -110,6 +122,9 @@ func runClient(cmd *cobra.Command, args []string) {
 	}
 	if cmd.Flags().Changed("dashboard-port") {
 		cfg.DashboardPort = dashboardPort
+	}
+	if cmd.Flags().Changed("insecure") {
+		cfg.InsecureTLS = insecureTLS
 	}
 
 	if err := cfg.Validate(); err != nil {

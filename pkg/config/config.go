@@ -139,6 +139,7 @@ func (c *ServerConfig) Validate() error {
 
 // ClientConfig represents the client configuration
 type ClientConfig struct {
+	ServerURL       string        `mapstructure:"server_url"`      // Full server URL (e.g., https://tungo.example.com or wss://tungo.example.com)
 	ServerHost      string        `mapstructure:"server_host"`    // Primary server (backward compatibility)
 	ControlPort     int           `mapstructure:"control_port"`   // Primary port (backward compatibility)
 	ServerCluster   []ServerNode  `mapstructure:"server_cluster"` // Multiple servers for failover
@@ -154,12 +155,14 @@ type ClientConfig struct {
 	MaxRetries      int           `mapstructure:"max_retries"`
 	DashboardPort   int           `mapstructure:"dashboard_port"`
 	EnableDashboard bool          `mapstructure:"enable_dashboard"`
+	InsecureTLS     bool          `mapstructure:"insecure_tls"` // Skip TLS certificate verification (for testing only)
 }
 
 // ServerNode represents a single server in the cluster
 type ServerNode struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host   string `mapstructure:"host"`
+	Port   int    `mapstructure:"port"`
+	Secure bool   `mapstructure:"secure"` // Use wss:// instead of ws://
 }
 
 // LoadClientConfig loads the client configuration
@@ -167,6 +170,7 @@ func LoadClientConfig(configPath string) (*ClientConfig, error) {
 	v := viper.New()
 
 	// Set defaults
+	v.SetDefault("server_url", "")
 	v.SetDefault("server_host", "localhost")
 	v.SetDefault("control_port", 5000)
 	v.SetDefault("local_host", "localhost")
@@ -181,6 +185,7 @@ func LoadClientConfig(configPath string) (*ClientConfig, error) {
 	v.SetDefault("max_retries", 5)
 	v.SetDefault("dashboard_port", 3000)
 	v.SetDefault("enable_dashboard", false)
+	v.SetDefault("insecure_tls", false)
 
 	// Set configuration file
 	if configPath != "" {
@@ -215,9 +220,9 @@ func LoadClientConfig(configPath string) (*ClientConfig, error) {
 
 // Validate validates the client configuration
 func (c *ClientConfig) Validate() error {
-	// Check if either single server or cluster is configured
-	if c.ServerHost == "" && len(c.ServerCluster) == 0 {
-		return fmt.Errorf("either server_host or server_cluster must be configured")
+	// Check if either ServerURL, single server, or cluster is configured
+	if c.ServerURL == "" && c.ServerHost == "" && len(c.ServerCluster) == 0 {
+		return fmt.Errorf("either server_url, server_host, or server_cluster must be configured")
 	}
 
 	// Validate single server config (if provided)
@@ -264,9 +269,110 @@ func (c *ClientConfig) Validate() error {
 
 // GetServerList returns the list of servers to try (cluster if available, otherwise single server)
 func (c *ClientConfig) GetServerList() []ServerNode {
+	// If ServerURL is provided, parse it first
+	if c.ServerURL != "" {
+		if host, port, secure, err := ParseServerURL(c.ServerURL); err == nil {
+			return []ServerNode{{Host: host, Port: port, Secure: secure}}
+		}
+	}
+	
 	if len(c.ServerCluster) > 0 {
 		return c.ServerCluster
 	}
 	// Fallback to single server (backward compatibility)
-	return []ServerNode{{Host: c.ServerHost, Port: c.ControlPort}}
+	return []ServerNode{{Host: c.ServerHost, Port: c.ControlPort, Secure: false}}
+}
+
+// ParseServerURL parses a full server URL and extracts host, port, and secure flag
+// Supports formats: https://example.com, wss://example.com:5000, http://example.com:8080
+func ParseServerURL(serverURL string) (host string, port int, secure bool, err error) {
+	// Add scheme if not present
+	if !strings.HasPrefix(serverURL, "http://") && 
+	   !strings.HasPrefix(serverURL, "https://") && 
+	   !strings.HasPrefix(serverURL, "ws://") && 
+	   !strings.HasPrefix(serverURL, "wss://") {
+		serverURL = "https://" + serverURL
+	}
+
+	// Parse URL
+	parsedURL, err := parseURL(serverURL)
+	if err != nil {
+		return "", 0, false, fmt.Errorf("invalid server URL: %w", err)
+	}
+
+	host = parsedURL.Hostname()
+	
+	// Determine if secure based on scheme
+	secure = (parsedURL.Scheme == "https" || parsedURL.Scheme == "wss")
+	
+	// Determine port
+	if parsedURL.Port() != "" {
+		// Explicit port in URL
+		_, err := fmt.Sscanf(parsedURL.Port(), "%d", &port)
+		if err != nil {
+			return "", 0, false, fmt.Errorf("invalid port in URL: %w", err)
+		}
+	} else {
+		// Default ports based on scheme
+		switch parsedURL.Scheme {
+		case "https", "wss":
+			port = 443 // Standard HTTPS/WSS port
+		case "http", "ws":
+			port = 80 // Standard HTTP/WS port
+		default:
+			port = 5000 // Default tungo control port for other cases
+		}
+	}
+
+	return host, port, secure, nil
+}
+
+// Helper function to avoid import cycle
+func parseURL(rawURL string) (*urlParts, error) {
+	// Simple URL parser for our needs
+	var parts urlParts
+	
+	// Extract scheme
+	schemeIdx := strings.Index(rawURL, "://")
+	if schemeIdx == -1 {
+		return nil, fmt.Errorf("missing scheme")
+	}
+	parts.Scheme = rawURL[:schemeIdx]
+	rest := rawURL[schemeIdx+3:]
+	
+	// Extract host and port
+	pathIdx := strings.Index(rest, "/")
+	var hostPort string
+	if pathIdx == -1 {
+		hostPort = rest
+	} else {
+		hostPort = rest[:pathIdx]
+	}
+	
+	// Split host and port
+	portIdx := strings.LastIndex(hostPort, ":")
+	if portIdx != -1 && strings.Count(hostPort, ":") == 1 {
+		// IPv4 with port or hostname with port
+		parts.Host = hostPort[:portIdx]
+		parts.PortStr = hostPort[portIdx+1:]
+	} else {
+		// No port or IPv6
+		parts.Host = hostPort
+	}
+	
+	return &parts, nil
+}
+
+type urlParts struct {
+	Scheme  string
+	Host    string
+	PortStr string
+}
+
+func (u *urlParts) Hostname() string {
+	return u.Host
+}
+
+func (u *urlParts) Port() string {
+	return u.PortStr
 }

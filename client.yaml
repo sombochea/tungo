@@ -1,10 +1,18 @@
 # TunGo Client Configuration
 
-# Server connection (single server)
+# Server connection - choose ONE of the following options:
+
+# Option 1: Full server URL with control port (recommended for production)
+# Note: This is the WebSocket control port, not the HTTP proxy port
+# server_url: "wss://tungo-cplane.ctdn.dev:5000"
+# server_url: "https://tungo-cplane.ctdn.dev:5000"
+# If port is omitted, defaults to 5000
+
+# Option 2: Individual server host and port
 server_host: "localhost"
 control_port: 5555
 
-# OR use server cluster for failover (commented out by default)
+# Option 3: Server cluster for failover (commented out by default)
 # server_cluster:
 #   - host: "server1.example.com"
 #     port: 5555
