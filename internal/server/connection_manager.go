@@ -12,14 +12,15 @@ import (
 
 // ClientConnection represents a connected client
 type ClientConnection struct {
-	ID          protocol.ClientID
-	SubDomain   string
-	Conn        *websocket.Conn
-	Streams     map[protocol.StreamID]*Stream
-	StreamMutex sync.RWMutex
-	Logger      zerolog.Logger
-	Send        chan []byte
-	Done        chan struct{}
+	ID            protocol.ClientID
+	SubDomain     string
+	ClientVersion string
+	Conn          *websocket.Conn
+	Streams       map[protocol.StreamID]*Stream
+	StreamMutex   sync.RWMutex
+	Logger        zerolog.Logger
+	Send          chan []byte
+	Done          chan struct{}
 }
 
 // Stream represents an active data stream
@@ -53,7 +54,7 @@ func NewConnectionManager(reg registry.Registry, logger zerolog.Logger, maxConn 
 }
 
 // AddClient adds a new client connection
-func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain string, conn *websocket.Conn) (*ClientConnection, error) {
+func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain string, clientVersion string, conn *websocket.Conn) (*ClientConnection, error) {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
@@ -70,13 +71,14 @@ func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain str
 	}
 
 	client := &ClientConnection{
-		ID:        clientID,
-		SubDomain: subDomain,
-		Conn:      conn,
-		Streams:   make(map[protocol.StreamID]*Stream),
-		Logger:    cm.logger.With().Str("client_id", clientID.String()).Str("subdomain", subDomain).Logger(),
-		Send:      make(chan []byte, 512), // Increased buffer for high throughput
-		Done:      make(chan struct{}),
+		ID:            clientID,
+		SubDomain:     subDomain,
+		ClientVersion: clientVersion,
+		Conn:          conn,
+		Streams:       make(map[protocol.StreamID]*Stream),
+		Logger:        cm.logger.With().Str("client_id", clientID.String()).Str("subdomain", subDomain).Logger(),
+		Send:          make(chan []byte, 512), // Increased buffer for high throughput
+		Done:          make(chan struct{}),
 	}
 
 	cm.clients[clientID] = client

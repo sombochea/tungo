@@ -75,6 +75,7 @@ type ClientHello struct {
 	ID             ClientID        `json:"id"`
 	SubDomain      *string         `json:"sub_domain,omitempty"`
 	ClientType     ClientType      `json:"client_type"`
+	ClientVersion  string          `json:"client_version,omitempty"`
 	SecretKey      *SecretKey      `json:"secret_key,omitempty"`
 	ReconnectToken *ReconnectToken `json:"reconnect_token,omitempty"`
 }
@@ -94,6 +95,11 @@ func NewClientHello(subDomain *string, secretKey *SecretKey) *ClientHello {
 	}
 
 	return hello
+}
+
+// SetClientVersion sets the client version for the hello message
+func (h *ClientHello) SetClientVersion(version string) {
+	h.ClientVersion = version
 }
 
 // NewReconnectHello creates a client hello message for reconnection

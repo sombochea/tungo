@@ -14,6 +14,7 @@ import (
 	"github.com/sombochea/tungo/internal/client/introspect"
 	"github.com/sombochea/tungo/pkg/config"
 	"github.com/sombochea/tungo/pkg/protocol"
+	"github.com/sombochea/tungo/pkg/version"
 )
 
 // Buffer pool for high-performance data forwarding
@@ -206,6 +207,9 @@ func (tc *TunnelClient) sendClientHello() error {
 
 		hello = protocol.NewClientHello(subDomain, secretKey)
 	}
+
+	// Set client version
+	hello.SetClientVersion(version.GetShortVersion())
 
 	return tc.conn.WriteJSON(hello)
 }

@@ -61,7 +61,7 @@ func (cs *ControlServer) HandleConnection(c *websocket.Conn) {
 	}
 
 	// Add client to connection manager (fully in-memory, stateless)
-	clientConn, err := cs.connMgr.AddClient(clientID, subDomain, c)
+	clientConn, err := cs.connMgr.AddClient(clientID, subDomain, clientHello.ClientVersion, c)
 	if err != nil {
 		logger.Error().Err(err).Msg("Failed to add client")
 		cs.sendErrorHello(c, protocol.ServerHelloError, err.Error())

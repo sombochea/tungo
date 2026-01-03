@@ -138,24 +138,27 @@ func (ph *ProxyHandler) HandleRequest(c fiber.Ctx, client *ClientConnection) err
 		case <-noDataTimeout.C:
 			// No more data coming, parse and return HTTP response
 			if responseBuffer.Len() > 0 {
-				return ph.sendHTTPResponse(c, responseBuffer)
+				return ph.sendHTTPResponse(c, responseBuffer, client, streamID, stream)
 			}
-			return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			return ph.sendPrettyErrorWithInfo(c, fiber.StatusBadGateway,
 				"No Response Received",
-				"Your local server didn't respond. Please check if your local application is running and accessible.")
+				"Your local server didn't respond. Please check if your local application is running and accessible.",
+				client, streamID, stream)
 
 		case <-stream.Done:
 			if responseBuffer.Len() > 0 {
-				return ph.sendHTTPResponse(c, responseBuffer)
+				return ph.sendHTTPResponse(c, responseBuffer, client, streamID, stream)
 			}
-			return ph.sendPrettyError(c, fiber.StatusBadGateway,
+			return ph.sendPrettyErrorWithInfo(c, fiber.StatusBadGateway,
 				"Connection Closed",
-				"The tunnel connection was closed before receiving a response. Your local server may have stopped or crashed.")
+				"The tunnel connection was closed before receiving a response. Your local server may have stopped or crashed.",
+				client, streamID, stream)
 
 		case <-timeout:
-			return ph.sendPrettyError(c, fiber.StatusGatewayTimeout,
+			return ph.sendPrettyErrorWithInfo(c, fiber.StatusGatewayTimeout,
 				"Request Timeout",
-				"Your local server took too long to respond (>30s). Please check if your application is experiencing performance issues.")
+				"Your local server took too long to respond (>30s). Please check if your application is experiencing performance issues.",
+				client, streamID, stream)
 		}
 	}
 }
@@ -194,7 +197,7 @@ func (ph *ProxyHandler) buildHTTPRequest(c fiber.Ctx) ([]byte, error) {
 }
 
 // sendHTTPResponse parses raw HTTP response and sends it through Fiber
-func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buffer) error {
+func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buffer, client *ClientConnection, streamID protocol.StreamID, stream *Stream) error {
 	data := responseBuffer.Bytes()
 
 	// Log first 200 bytes for debugging
@@ -212,6 +215,8 @@ func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buff
 		ph.logger.Warn().Int("bytes", len(data)).Msg("Response too short to be valid HTTP, returning as-is")
 		// Return as plain text instead of error
 		c.Set("Content-Type", "text/plain")
+		// Add TunGo headers even for non-HTTP responses
+		setTunGoHeaders(c, client, streamID, stream)
 		return c.Status(fiber.StatusOK).Send(data)
 	}
 
@@ -222,6 +227,8 @@ func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buff
 			Msg("Response doesn't start with HTTP/, returning as-is")
 		// Return as plain text instead of error
 		c.Set("Content-Type", "text/plain")
+		// Add TunGo headers even for non-HTTP responses
+		setTunGoHeaders(c, client, streamID, stream)
 		return c.Status(fiber.StatusOK).Send(data)
 	}
 
@@ -242,6 +249,9 @@ func (ph *ProxyHandler) sendHTTPResponse(c fiber.Ctx, responseBuffer *bytes.Buff
 
 	// Set status code
 	c.Status(resp.StatusCode)
+
+	// Add TunGo custom headers for tunnel information
+	setTunGoHeaders(c, client, streamID, stream)
 
 	// Copy headers (preserve all headers including Content-Type)
 	for key, values := range resp.Header {
@@ -269,8 +279,36 @@ func min(a, b int) int {
 	return b
 }
 
+// setTunGoHeaders adds TunGo custom headers to the response
+func setTunGoHeaders(c fiber.Ctx, client *ClientConnection, streamID protocol.StreamID, stream *Stream) {
+	protocolType := "unknown"
+	if stream != nil {
+		protocolType = stream.Protocol
+	}
+
+	clientVersion := client.ClientVersion
+	if clientVersion == "" {
+		clientVersion = "unknown"
+	}
+
+	c.Set("X-Tungo-Client-ID", client.ID.String())
+	c.Set("X-Tungo-Stream-ID", streamID.String())
+	c.Set("X-Tungo-Subdomain", client.SubDomain)
+	c.Set("X-Tungo-Protocol", protocolType)
+	c.Set("X-Tungo-Version", clientVersion)
+}
+
 // sendPrettyError sends a user-friendly HTML error response
 func (ph *ProxyHandler) sendPrettyError(c fiber.Ctx, status int, title, message string) error {
+	return ph.sendPrettyErrorWithInfo(c, status, title, message, nil, "", nil)
+}
+
+// sendPrettyErrorWithInfo sends a user-friendly HTML error response with optional tunnel info
+func (ph *ProxyHandler) sendPrettyErrorWithInfo(c fiber.Ctx, status int, title, message string, client *ClientConnection, streamID protocol.StreamID, stream *Stream) error {
+	// Add TunGo headers if client info is provided
+	if client != nil {
+		setTunGoHeaders(c, client, streamID, stream)
+	}
 	c.Set("Content-Type", "text/html; charset=utf-8")
 	html := fmt.Sprintf(`<!DOCTYPE html>
 <html lang="en">
