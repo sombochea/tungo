@@ -5,8 +5,10 @@
 # Variables
 BINARY_SERVER=bin/server
 BINARY_CLIENT=bin/client
-VERSION?=$(shell git describe --tags --always --dirty)
-LDFLAGS=-ldflags "-w -s -X main.Version=$(VERSION)"
+VERSION?=$(shell git describe --tags --match "v*" --always --dirty 2>/dev/null || echo "dev")
+GIT_COMMIT?=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE?=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS=-ldflags "-w -s -X github.com/sombochea/tungo/pkg/version.Version=$(VERSION) -X github.com/sombochea/tungo/pkg/version.GitCommit=$(GIT_COMMIT) -X github.com/sombochea/tungo/pkg/version.BuildDate=$(BUILD_DATE)"
 
 # Default target
 all: test build

@@ -14,6 +14,7 @@ import (
 	"github.com/sombochea/tungo/internal/client"
 	"github.com/sombochea/tungo/internal/client/introspect"
 	"github.com/sombochea/tungo/pkg/config"
+	"github.com/sombochea/tungo/pkg/version"
 )
 
 var (
@@ -30,13 +31,35 @@ var (
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "tungo",
-		Short: "TunGo client - expose your local server to the internet",
-		Long:  `TunGo client creates a secure tunnel from a public URL to your local development server.`,
-		Run:   runClient,
+		Use:     "tungo",
+		Short:   "TunGo client - expose your local server to the internet",
+		Long:    `TunGo client creates a secure tunnel from a public URL to your local development server.`,
+		Version: version.GetShortVersion(),
+		Run:     runClient,
 	}
 
-	// Flags
+	// Version command
+	versionCmd := &cobra.Command{
+		Use:   "version",
+		Short: "Show version information",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version.GetFullVersion())
+		},
+	}
+
+	// Upgrade command
+	upgradeCmd := &cobra.Command{
+		Use:   "upgrade",
+		Short: "Upgrade to the latest version",
+		Long:  `Downloads and installs the latest version of TunGo client from GitHub releases.`,
+		Run:   runUpgrade,
+	}
+
+	// Add subcommands
+	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(upgradeCmd)
+
+	// Flags for the root command (tunnel)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
 	rootCmd.Flags().StringVar(&serverHost, "server", "localhost", "tungo server host")
 	rootCmd.Flags().IntVar(&serverPort, "port", 5555, "tungo server control port")
@@ -46,6 +69,9 @@ func main() {
 	rootCmd.Flags().StringVarP(&secretKey, "key", "k", "", "secret key for authentication")
 	rootCmd.Flags().BoolVarP(&enableDashboard, "dashboard", "d", false, "enable introspection dashboard")
 	rootCmd.Flags().IntVar(&dashboardPort, "dashboard-port", 3000, "introspection dashboard port")
+
+	// Set version template
+	rootCmd.SetVersionTemplate("{{.Version}}\n")
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -294,4 +320,35 @@ func setupLogger(cfg *config.ClientConfig) {
 	if cfg.LogFormat == "console" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 	}
+}
+
+func runUpgrade(cmd *cobra.Command, args []string) {
+	fmt.Println("🔄 Checking for updates...")
+	fmt.Printf("Current version: %s\n", version.GetShortVersion())
+
+	// Check for updates
+	hasUpdate, latestVersion, err := version.CheckForUpdates()
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to check for updates")
+		fmt.Printf("❌ Failed to check for updates: %v\n", err)
+		os.Exit(1)
+	}
+
+	if !hasUpdate {
+		fmt.Println("✅ You are already running the latest version!")
+		return
+	}
+
+	fmt.Printf("📦 New version available: %s\n", latestVersion)
+	fmt.Println("⬇️  Downloading and installing...")
+
+	// Download and install
+	if err := version.DownloadAndInstall(); err != nil {
+		log.Error().Err(err).Msg("Failed to upgrade")
+		fmt.Printf("❌ Upgrade failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Upgrade completed successfully!")
+	fmt.Println("Please run 'tungo' again to use the new version.")
 }
