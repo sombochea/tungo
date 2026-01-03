@@ -41,16 +41,19 @@ function Get-Architecture {
     }
 }
 
-# Get latest release version
+# Get latest release version (CLI only, excluding SDK releases)
 function Get-LatestVersion {
     Write-Info "Fetching latest release information..."
     
     try {
-        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/sombochea/tungo/releases/latest" -ErrorAction Stop
-        $version = $response.tag_name
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/sombochea/tungo/releases" -ErrorAction Stop
+        # Filter out SDK releases (those starting with "sdk-")
+        $version = $response | 
+            Where-Object { $_.tag_name -notmatch '^sdk-' } | 
+            Select-Object -First 1 -ExpandProperty tag_name
         
         if ([string]::IsNullOrEmpty($version)) {
-            Write-Error-Custom "Could not fetch latest version from GitHub"
+            Write-Error-Custom "Could not fetch latest CLI version from GitHub"
             exit 1
         }
         

@@ -66,15 +66,20 @@ detect_platform() {
     print_info "Detected platform: $OS/$ARCH"
 }
 
-# Get latest release version
+# Get latest release version (CLI only, excluding SDK releases)
 get_latest_version() {
     print_info "Fetching latest release information..."
     
-    local latest_url="https://api.github.com/repos/$GITHUB_REPO/releases/latest"
-    local version=$(curl -s "$latest_url" | grep '"tag_name"' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' | head -1)
+    local releases_url="https://api.github.com/repos/$GITHUB_REPO/releases"
+    # Get all releases and filter out SDK releases (those starting with "sdk-")
+    local version=$(curl -s "$releases_url" | \
+        grep '"tag_name"' | \
+        sed -E 's/.*"tag_name": "([^"]+)".*/\1/' | \
+        grep -v '^sdk-' | \
+        head -1)
     
     if [[ -z "$version" ]]; then
-        print_error "Could not fetch latest version from GitHub"
+        print_error "Could not fetch latest CLI version from GitHub"
         exit 1
     fi
     
