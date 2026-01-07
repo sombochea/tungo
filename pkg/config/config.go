@@ -19,8 +19,8 @@ type ServerConfig struct {
 	MaxConnections    int           `mapstructure:"max_connections"`
 	RequireAuth       bool          `mapstructure:"require_auth"`
 	AllowAnonymous    bool          `mapstructure:"allow_anonymous"`
-	SubDomainSuffix   string        `mapstructure:"subdomain_suffix"`
-	PublicURLFormat   string        `mapstructure:"public_url_format"`
+	Domain            string        `mapstructure:"domain"`
+	PublicURL         string        `mapstructure:"public_url"`
 	LogLevel          string        `mapstructure:"log_level"`
 	LogFormat         string        `mapstructure:"log_format"`
 	ReadTimeout       time.Duration `mapstructure:"read_timeout"`
@@ -46,8 +46,8 @@ func LoadServerConfig(configPath string) (*ServerConfig, error) {
 	v.SetDefault("max_connections", 1000)
 	v.SetDefault("require_auth", false)
 	v.SetDefault("allow_anonymous", true)
-	v.SetDefault("subdomain_suffix", "localhost")
-	v.SetDefault("public_url_format", "http://{{ .subdomain }}.localhost:{{ .port }}")
+	v.SetDefault("domain", "{{ .subdomain }}.localhost")
+	v.SetDefault("public_url", "http://{{ .domain }}:{{ .port }}")
 	v.SetDefault("log_level", "info")
 	v.SetDefault("log_format", "json")
 	v.SetDefault("read_timeout", "30s")

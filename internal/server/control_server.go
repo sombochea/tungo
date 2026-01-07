@@ -178,16 +178,24 @@ func (cs *ControlServer) authenticate(hello *protocol.ClientHello) (*protocol.Se
 	}
 
 	// Create success response (stateless, no reconnect token needed)
-	hostname := fmt.Sprintf("%s.%s", subDomain, cs.config.SubDomainSuffix)
+	// Build domain from template
+	domain := cs.config.Domain
+	if domain == "" {
+		domain = fmt.Sprintf("%s.localhost", subDomain)
+	} else {
+		domain = strings.ReplaceAll(domain, "{{ .subdomain }}", subDomain)
+	}
+	hostname := domain
 
-	// Build public URL from format template
-	publicURL := cs.config.PublicURLFormat
+	// Build public URL from template
+	publicURL := cs.config.PublicURL
 	if publicURL == "" {
 		// Fallback if not configured
 		publicURL = fmt.Sprintf("http://%s", hostname)
 	} else {
 		// Replace template variables
-		publicURL = strings.ReplaceAll(cs.config.PublicURLFormat, "{{ .subdomain }}", subDomain)
+		publicURL = strings.ReplaceAll(publicURL, "{{ .domain }}", domain)
+		publicURL = strings.ReplaceAll(publicURL, "{{ .subdomain }}", subDomain)
 		publicURL = strings.ReplaceAll(publicURL, "{{ .port }}", fmt.Sprintf("%d", cs.config.Port))
 	}
 

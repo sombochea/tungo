@@ -1,0 +1,11 @@
+id: "test-server"
+host: "0.0.0.0"
+port: 8080
+control_port: 5555
+
+# Test prefix subdomain format (like your production)
+domain: "{{ .subdomain }}-tungo.ctdn.dev"
+public_url: "https://{{ .domain }}"
+
+log_level: "info"
+log_format: "console"

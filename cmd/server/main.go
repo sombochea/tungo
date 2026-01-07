@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -42,7 +43,7 @@ func main() {
 		Str("host", cfg.Host).
 		Int("port", cfg.Port).
 		Int("control_port", cfg.ControlPort).
-		Str("subdomain_suffix", cfg.SubDomainSuffix).
+		Str("domain", cfg.Domain).
 		Str("redis_url", cfg.RedisURL).
 		Msg("Server configuration")
 
@@ -147,7 +148,7 @@ func main() {
 		host := c.Hostname()
 
 		// Extract subdomain
-		subDomain := extractSubDomain(host, cfg.SubDomainSuffix)
+		subDomain := extractSubDomain(host, cfg.Domain)
 		if subDomain == "" {
 			return sendPrettyError(c, fiber.StatusNotFound,
 				"Tunnel Not Found",
@@ -287,18 +288,30 @@ func setupLogger(cfg *config.ServerConfig) {
 	}
 }
 
-func extractSubDomain(host, suffix string) string {
-	// Simple subdomain extraction
-	// Example: "test.localhost" with suffix "localhost" -> "test"
-	if len(host) <= len(suffix) {
+func extractSubDomain(host, domainTemplate string) string {
+	// Extract subdomain from domain template
+	// Examples:
+	// - "{{ .subdomain }}.localhost" with host "test.localhost" -> "test"
+	// - "{{ .subdomain }}-tungo.example.com" with host "test-tungo.example.com" -> "test"
+
+	// Find the subdomain placeholder position
+	placeholder := "{{ .subdomain }}"
+	idx := strings.Index(domainTemplate, placeholder)
+	if idx == -1 {
 		return ""
 	}
 
-	if host[len(host)-len(suffix):] != suffix {
+	// Extract prefix and suffix around the placeholder
+	prefix := domainTemplate[:idx]
+	suffix := domainTemplate[idx+len(placeholder):]
+
+	// Check if host matches the pattern
+	if !strings.HasPrefix(host, prefix) || !strings.HasSuffix(host, suffix) {
 		return ""
 	}
 
-	subDomain := host[:len(host)-len(suffix)-1]
+	// Extract the subdomain
+	subDomain := host[len(prefix) : len(host)-len(suffix)]
 	return subDomain
 }
 

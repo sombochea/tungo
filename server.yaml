@@ -20,14 +20,17 @@ connection_timeout: "10s"
 require_auth: false
 allow_anonymous: true
 
-# Domain settings
-subdomain_suffix: "localhost"
-
-# Public URL format (supports template variables: {{ .subdomain }}, {{ .port }})
+# Domain settings (supports template: {{ .subdomain }})
 # Examples:
-#   Local dev:  "http://{{ .subdomain }}.localhost:{{ .port }}"
-#   Production: "https://{{ .subdomain }}.tungo.dev"
-public_url_format: "http://{{ .subdomain }}.localhost:{{ .port }}"
+#   Traditional: "{{ .subdomain }}.example.com"
+#   Prefix:      "{{ .subdomain }}-tungo.example.com"
+domain: "{{ .subdomain }}.localhost"
+
+# Public URL (supports: {{ .domain }}, {{ .subdomain }}, {{ .port }})
+# Examples:
+#   "http://{{ .domain }}:{{ .port }}"
+#   "https://{{ .subdomain }}-tungo.example.com"
+public_url: "http://{{ .domain }}:{{ .port }}"
 
 # Logging
 log_level: "info"      # debug, info, warn, error, fatal

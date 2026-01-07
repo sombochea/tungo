@@ -1,0 +1,11 @@
+id: "test-server"
+host: "0.0.0.0"
+port: 8080
+control_port: 5555
+
+# Test traditional subdomain format
+domain: "{{ .subdomain }}.localhost"
+public_url: "http://{{ .domain }}:{{ .port }}"
+
+log_level: "info"
+log_format: "console"
