@@ -231,6 +231,12 @@ func main() {
 			if providedPassword != "" {
 				if providedPassword == client.Password {
 					authenticated = true
+
+					// Check if this is a browser request (has cookie already or accepts HTML)
+					existingCookie := c.Cookies("tungo-auth-" + subDomain)
+					acceptHeader := c.Get("Accept")
+					isBrowserAuth := existingCookie == "" && strings.Contains(acceptHeader, "text/html")
+
 					// Set cookie for browser sessions (valid for 24 hours)
 					c.Cookie(&fiber.Cookie{
 						Name:     "tungo-auth-" + subDomain,
@@ -241,9 +247,13 @@ func main() {
 						Secure:   false, // Set to true if using HTTPS
 						SameSite: "Lax",
 					})
-					// Return success response for auth check (don't proxy yet)
-					// The client will reload to get the actual content
-					return c.JSON(fiber.Map{"authenticated": true})
+
+					// If it's a browser authentication attempt (first time, accepts HTML), return success JSON
+					// Browser will reload to get actual content. Otherwise continue to proxy (API/curl)
+					if isBrowserAuth {
+						return c.JSON(fiber.Map{"authenticated": true})
+					}
+					// For API requests (curl, etc), continue to proxy below
 				} else {
 					// Wrong password
 					return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"authenticated": false, "error": "invalid password"})
