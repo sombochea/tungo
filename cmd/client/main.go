@@ -63,7 +63,7 @@ func main() {
 
 	// Flags for the root command (tunnel)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
-	rootCmd.Flags().StringVar(&serverURL, "server-url", "", "full server URL with control port (e.g., https://tungo.example.com:5000 or wss://tungo.example.com:5000)")
+	rootCmd.Flags().StringVar(&serverURL, "server-url", "wss://singal-tg01.ctdn.dev", "full server URL with control port (e.g., http://tungo.example.com:5555 or ws://tungo.example.com:5555)")
 	rootCmd.Flags().StringVar(&serverHost, "server", "localhost", "tungo server host")
 	rootCmd.Flags().IntVar(&serverPort, "port", 5555, "tungo server control port")
 	rootCmd.Flags().StringVar(&localHost, "local-host", "localhost", "local server host")

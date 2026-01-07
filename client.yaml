@@ -4,7 +4,7 @@
 
 # Option 1: Full server URL with control port (recommended for production)
 # Note: This is the WebSocket control port, not the HTTP proxy port
-# server_url: "wss://tungo-cplane.ctdn.dev:5000"
+server_url: "wss://singal-tg01.ctdn.dev"
 # server_url: "https://tungo-cplane.ctdn.dev:5000"
 # If port is omitted, defaults to 5000
 
