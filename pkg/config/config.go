@@ -171,7 +171,7 @@ func LoadClientConfig(configPath string) (*ClientConfig, error) {
 	v := viper.New()
 
 	// Set defaults
-	v.SetDefault("server_url", "wss://singal-tg01.ctdn.dev")
+	v.SetDefault("server_url", "")
 	v.SetDefault("server_host", "localhost")
 	v.SetDefault("control_port", 5555)
 	v.SetDefault("local_host", "localhost")

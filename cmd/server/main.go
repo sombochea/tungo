@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/base64"
+	"crypto/sha256"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -209,27 +209,50 @@ func main() {
 
 		// Check password authentication if client has set one
 		if client.Password != "" {
+			authenticated := false
+			providedPassword := ""
+
 			// Check x-tungo-password header first (for API access)
-			providedPassword := c.Get("x-tungo-password")
-			
+			providedPassword = c.Get("x-tungo-password")
+
 			if providedPassword == "" {
-				// Check basic auth for browser access
-				auth := c.Get("Authorization")
-				if strings.HasPrefix(auth, "Basic ") {
-					// Decode base64
-					payload, err := base64.StdEncoding.DecodeString(auth[6:])
-					if err == nil {
-						pair := strings.SplitN(string(payload), ":", 2)
-						if len(pair) == 2 && pair[0] == "tungo" {
-							providedPassword = pair[1]
-						}
+				// Check auth cookie
+				authCookie := c.Cookies("tungo-auth-" + subDomain)
+				if authCookie != "" {
+					// Verify cookie matches expected password hash
+					expectedHash := fmt.Sprintf("%x", sha256.Sum256([]byte(client.Password)))
+					if authCookie == expectedHash {
+						authenticated = true
 					}
 				}
 			}
-			
-			if providedPassword != client.Password {
-				// Return 401 with password prompt for browsers
-				c.Set("WWW-Authenticate", `Basic realm="Tunnel Access", charset="UTF-8"`)
+
+			// If header provided, verify it
+			if providedPassword != "" {
+				if providedPassword == client.Password {
+					authenticated = true
+					// Set cookie for browser sessions (valid for 24 hours)
+					c.Cookie(&fiber.Cookie{
+						Name:     "tungo-auth-" + subDomain,
+						Value:    fmt.Sprintf("%x", sha256.Sum256([]byte(client.Password))),
+						Path:     "/",
+						MaxAge:   86400, // 24 hours
+						HTTPOnly: true,
+						Secure:   false, // Set to true if using HTTPS
+						SameSite: "Lax",
+					})
+					// Return success response for auth check (don't proxy yet)
+					// The client will reload to get the actual content
+					return c.JSON(fiber.Map{"authenticated": true})
+				} else {
+					// Wrong password
+					return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"authenticated": false, "error": "invalid password"})
+				}
+			}
+
+			if !authenticated {
+				// Return 401 with password prompt for browsers (no WWW-Authenticate to avoid browser dialog)
+				c.Set("Content-Type", "text/html; charset=utf-8")
 				return c.Status(fiber.StatusUnauthorized).SendString(getPasswordPromptHTML())
 			}
 		}
@@ -452,38 +475,147 @@ func getPasswordPromptHTML() string {
         }
         .auth-container {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 40px;
-            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 48px 40px;
+            max-width: 420px;
             width: 100%;
-            text-align: center;
         }
         .lock-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
+            font-size: 72px;
+            margin-bottom: 24px;
+            text-align: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
         h1 {
-            font-size: 24px;
-            color: #333;
-            margin-bottom: 10px;
+            font-size: 28px;
+            color: #2d3748;
+            margin-bottom: 12px;
+            text-align: center;
+            font-weight: 700;
         }
-        p {
-            color: #666;
-            margin-bottom: 30px;
+        .subtitle {
+            color: #718096;
+            margin-bottom: 32px;
+            font-size: 15px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .form-group {
+            margin-bottom: 24px;
+        }
+        label {
+            display: block;
+            color: #4a5568;
             font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .password-input-wrapper {
+            position: relative;
+        }
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 14px 44px 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: #f7fafc;
+        }
+        input[type="password"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            color: #a0aec0;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .toggle-password:hover {
+            color: #667eea;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        .error-message {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .api-hint {
+            margin-top: 24px;
+            padding: 16px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .api-hint-title {
+            color: #4c51bf;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .api-hint-content {
+            color: #5a67d8;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
         }
         .footer {
-            margin-top: 30px;
-            color: #999;
-            font-size: 12px;
+            margin-top: 32px;
+            text-align: center;
+            color: #a0aec0;
+            font-size: 13px;
         }
-        a {
+        .footer a {
             color: #667eea;
             text-decoration: none;
             font-weight: 600;
+            transition: color 0.2s;
         }
-        a:hover {
+        .footer a:hover {
+            color: #764ba2;
             text-decoration: underline;
         }
     </style>
@@ -492,14 +624,100 @@ func getPasswordPromptHTML() string {
     <div class="auth-container">
         <div class="lock-icon">🔒</div>
         <h1>Authentication Required</h1>
-        <p>This tunnel is password protected. Please provide credentials to access.</p>
-        <p style="color: #999; font-size: 12px; margin-top: 20px;">
-            For API access, use the <code>x-tungo-password</code> header.
-        </p>
+        <p class="subtitle">This tunnel is password protected. Please enter the password to continue.</p>
+        
+        <div id="errorMessage" class="error-message">
+            Invalid password. Please try again.
+        </div>
+
+        <form id="authForm" onsubmit="return handleSubmit(event)">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-input-wrapper">
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="Enter tunnel password"
+                        required 
+                        autocomplete="current-password"
+                        autofocus
+                    />
+                    <button type="button" class="toggle-password" onclick="togglePassword()" title="Show/Hide password">
+                        <span id="toggleIcon">👁️</span>
+                    </button>
+                </div>
+            </div>
+            <button type="submit" class="submit-btn">Access Tunnel</button>
+        </form>
+
+        <div class="api-hint">
+            <div class="api-hint-title">💡 API Access</div>
+            <div class="api-hint-content">x-tungo-password: your_password</div>
+        </div>
+
         <div class="footer">
-            Powered by <a href="https://github.com/sombochea/tungo">TunGo</a>
+            Powered by <a href="https://github.com/sombochea/tungo" target="_blank">TunGo</a>
         </div>
     </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.textContent = '👁️';
+            }
+        }
+
+        function handleSubmit(event) {
+            event.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Send request with password in header
+            fetch(window.location.href, {
+                method: 'GET',
+                headers: {
+                    'x-tungo-password': password
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Password correct, reload page to show content
+                    window.location.reload();
+                } else {
+                    // Show error message
+                    errorMessage.classList.add('show');
+                    document.getElementById('password').value = '';
+                    document.getElementById('password').focus();
+                    
+                    // Hide error after 3 seconds
+                    setTimeout(() => {
+                        errorMessage.classList.remove('show');
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorMessage.classList.add('show');
+            });
+            
+            return false;
+        }
+
+        // Check for stored auth and auto-submit
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus on password input
+            document.getElementById('password').focus();
+        });
+    </script>
 </body>
 </html>`
 }
