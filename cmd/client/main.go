@@ -26,6 +26,7 @@ var (
 	localPort       int
 	subDomain       string
 	secretKey       string
+	password        string
 	enableDashboard bool
 	dashboardPort   int
 	insecureTLS     bool
@@ -63,13 +64,14 @@ func main() {
 
 	// Flags for the root command (tunnel)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "config file path")
-	rootCmd.Flags().StringVar(&serverURL, "server-url", "wss://singal-tg01.ctdn.dev", "full server URL with control port (e.g., http://tungo.example.com:5555 or ws://tungo.example.com:5555)")
+	rootCmd.Flags().StringVar(&serverURL, "server-url", "", "full server URL with control port (e.g., http://tungo.example.com:5555 or ws://tungo.example.com:5555)")
 	rootCmd.Flags().StringVar(&serverHost, "server", "localhost", "tungo server host")
 	rootCmd.Flags().IntVar(&serverPort, "port", 5555, "tungo server control port")
 	rootCmd.Flags().StringVar(&localHost, "local-host", "localhost", "local server host")
 	rootCmd.Flags().IntVar(&localPort, "local-port", 8000, "local server port")
 	rootCmd.Flags().StringVarP(&subDomain, "subdomain", "s", "", "requested subdomain")
 	rootCmd.Flags().StringVarP(&secretKey, "key", "k", "", "secret key for authentication")
+	rootCmd.Flags().StringVarP(&password, "password", "p", "", "password to protect tunnel access")
 	rootCmd.Flags().BoolVarP(&enableDashboard, "dashboard", "d", false, "enable introspection dashboard")
 	rootCmd.Flags().IntVar(&dashboardPort, "dashboard-port", 3000, "introspection dashboard port")
 	rootCmd.Flags().BoolVar(&insecureTLS, "insecure", false, "skip TLS certificate verification (for testing only)")
@@ -116,6 +118,9 @@ func runClient(cmd *cobra.Command, args []string) {
 	}
 	if secretKey != "" && cmd.Flags().Changed("key") {
 		cfg.SecretKey = secretKey
+	}
+	if password != "" && cmd.Flags().Changed("password") {
+		cfg.Password = password
 	}
 	if cmd.Flags().Changed("dashboard") {
 		cfg.EnableDashboard = enableDashboard

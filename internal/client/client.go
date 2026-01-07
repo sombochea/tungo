@@ -238,6 +238,11 @@ func (tc *TunnelClient) sendClientHello() error {
 		}
 
 		hello = protocol.NewClientHello(subDomain, secretKey)
+		
+		// Add password if configured
+		if tc.config.Password != "" {
+			hello.Password = &tc.config.Password
+		}
 	}
 
 	// Set client version

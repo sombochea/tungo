@@ -78,6 +78,7 @@ type ClientHello struct {
 	ClientVersion  string          `json:"client_version,omitempty"`
 	SecretKey      *SecretKey      `json:"secret_key,omitempty"`
 	ReconnectToken *ReconnectToken `json:"reconnect_token,omitempty"`
+	Password       *string         `json:"password,omitempty"` // Optional password to protect tunnel access
 }
 
 // NewClientHello creates a new client hello message

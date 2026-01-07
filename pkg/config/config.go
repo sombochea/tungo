@@ -40,7 +40,7 @@ func LoadServerConfig(configPath string) (*ServerConfig, error) {
 	v.SetDefault("id", "server-1")
 	v.SetDefault("host", "0.0.0.0")
 	v.SetDefault("port", 8080)
-	v.SetDefault("control_port", 5000)
+	v.SetDefault("control_port", 5555)
 	v.SetDefault("proxy_start_port", 10000)
 	v.SetDefault("proxy_end_port", 20000)
 	v.SetDefault("max_connections", 1000)
@@ -147,6 +147,7 @@ type ClientConfig struct {
 	LocalPort       int           `mapstructure:"local_port"`
 	SubDomain       string        `mapstructure:"subdomain"`
 	SecretKey       string        `mapstructure:"secret_key"`
+	Password        string        `mapstructure:"password"` // Password to protect tunnel access
 	ReconnectToken  string        `mapstructure:"reconnect_token"`
 	LogLevel        string        `mapstructure:"log_level"`
 	LogFormat       string        `mapstructure:"log_format"`
@@ -170,11 +171,11 @@ func LoadClientConfig(configPath string) (*ClientConfig, error) {
 	v := viper.New()
 
 	// Set defaults
-	v.SetDefault("server_url", "")
+	v.SetDefault("server_url", "wss://singal-tg01.ctdn.dev")
 	v.SetDefault("server_host", "localhost")
-	v.SetDefault("control_port", 5000)
+	v.SetDefault("control_port", 5555)
 	v.SetDefault("local_host", "localhost")
-	v.SetDefault("local_port", 8000)
+	v.SetDefault("local_port", 3000)
 	v.SetDefault("subdomain", "")
 	v.SetDefault("secret_key", "")
 	v.SetDefault("reconnect_token", "")
@@ -320,7 +321,7 @@ func ParseServerURL(serverURL string) (host string, port int, secure bool, err e
 		case "http", "ws":
 			port = 80 // Standard HTTP/WS port
 		default:
-			port = 5000 // Default tungo control port for other cases
+			port = 5555 // Default tungo control port for other cases
 		}
 	}
 

@@ -15,6 +15,7 @@ type ClientConnection struct {
 	ID            protocol.ClientID
 	SubDomain     string
 	ClientVersion string
+	Password      string // Optional password to protect tunnel access
 	Conn          *websocket.Conn
 	Streams       map[protocol.StreamID]*Stream
 	StreamMutex   sync.RWMutex
@@ -54,7 +55,7 @@ func NewConnectionManager(reg registry.Registry, logger zerolog.Logger, maxConn 
 }
 
 // AddClient adds a new client connection
-func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain string, clientVersion string, conn *websocket.Conn) (*ClientConnection, error) {
+func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain string, clientVersion string, password string, conn *websocket.Conn) (*ClientConnection, error) {
 	cm.mutex.Lock()
 	defer cm.mutex.Unlock()
 
@@ -74,6 +75,7 @@ func (cm *ConnectionManager) AddClient(clientID protocol.ClientID, subDomain str
 		ID:            clientID,
 		SubDomain:     subDomain,
 		ClientVersion: clientVersion,
+		Password:      password,
 		Conn:          conn,
 		Streams:       make(map[protocol.StreamID]*Stream),
 		Logger:        cm.logger.With().Str("client_id", clientID.String()).Str("subdomain", subDomain).Logger(),

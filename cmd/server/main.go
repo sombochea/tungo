@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -206,6 +207,33 @@ func main() {
 				"This tunnel is currently not connected. Please start your tunnel client and try again.")
 		}
 
+		// Check password authentication if client has set one
+		if client.Password != "" {
+			// Check x-tungo-password header first (for API access)
+			providedPassword := c.Get("x-tungo-password")
+			
+			if providedPassword == "" {
+				// Check basic auth for browser access
+				auth := c.Get("Authorization")
+				if strings.HasPrefix(auth, "Basic ") {
+					// Decode base64
+					payload, err := base64.StdEncoding.DecodeString(auth[6:])
+					if err == nil {
+						pair := strings.SplitN(string(payload), ":", 2)
+						if len(pair) == 2 && pair[0] == "tungo" {
+							providedPassword = pair[1]
+						}
+					}
+				}
+			}
+			
+			if providedPassword != client.Password {
+				// Return 401 with password prompt for browsers
+				c.Set("WWW-Authenticate", `Basic realm="Tunnel Access", charset="UTF-8"`)
+				return c.Status(fiber.StatusUnauthorized).SendString(getPasswordPromptHTML())
+			}
+		}
+
 		// Handle the request through the tunnel
 		return proxyHandler.HandleRequest(c, client)
 	})
@@ -397,6 +425,83 @@ func sendPrettyError(c fiber.Ctx, status int, title, message string) error {
 </body>
 </html>`, title, title, message, status)
 	return c.Status(status).SendString(html)
+}
+
+// getPasswordPromptHTML returns HTML for password authentication
+func getPasswordPromptHTML() string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Required - TunGo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .auth-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .lock-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="lock-icon">🔒</div>
+        <h1>Authentication Required</h1>
+        <p>This tunnel is password protected. Please provide credentials to access.</p>
+        <p style="color: #999; font-size: 12px; margin-top: 20px;">
+            For API access, use the <code>x-tungo-password</code> header.
+        </p>
+        <div class="footer">
+            Powered by <a href="https://github.com/sombochea/tungo">TunGo</a>
+        </div>
+    </div>
+</body>
+</html>`
 }
 
 // responseWriter is a wrapper to adapt fiber context to http.ResponseWriter
