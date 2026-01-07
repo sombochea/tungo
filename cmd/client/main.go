@@ -100,11 +100,18 @@ func runClient(cmd *cobra.Command, args []string) {
 		cfg.ServerHost = ""
 		cfg.ControlPort = 0
 	} else {
-		if serverHost != "" && cmd.Flags().Changed("server") {
-			cfg.ServerHost = serverHost
-		}
-		if cmd.Flags().Changed("port") {
-			cfg.ControlPort = serverPort
+		if serverURL == "" && version.GetShortVersion() != "dev" {
+			// For production releases, use default server URL if none provided
+			cfg.ServerURL = "wss://singal-tg01.ctdn.dev"
+			cfg.ServerHost = ""
+			cfg.ControlPort = 0
+		} else {
+			if serverHost != "" && cmd.Flags().Changed("server") {
+				cfg.ServerHost = serverHost
+			}
+			if cmd.Flags().Changed("port") {
+				cfg.ControlPort = serverPort
+			}
 		}
 	}
 	if localHost != "" && cmd.Flags().Changed("local-host") {
